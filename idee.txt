@@ -1,0 +1,37 @@
+-thread pool
+
+-gestire l'invio dei messaggi da server a client tramite le CONDITIONS
+per il quale tutti i thread attendono che tutti gli altri abbiano TENTAT0 di
+inviare i messaggi a tutti i loro client
+
+-2 thread per user, uno che ascolta uno che invia
+
+-implementare le liste e le linked list
+
+-le liste utilizzare per appendere i messaggi in arrivo per user, che fungono
+da LOG LOCALE (i nuovi contenuti bisogna appenderli in scrittura a un file, può
+occuparsene un vuovo processo)
+
+-le linked list devono essere usate per appendere i messaggi con timestamp minore
+su una linked list da cui vengono presi i messaggi e mandati ai client
+(si entra nel paaradigma producer consumer) -> deprecated
+-> idea forse migliore: utilizzare la lista di log LOCALE per ogni utente, dove
+si tiene un contatore dell'indice dei messaggi mandati. ogni thread mette le lock
+sulla sua lista locale e il server si scorre la lista degli utenti alla ricerca
+del più piccolo timestamp, e cerca di prenderne il lock oppure si mette in attesa
+su di esso.
+
+
+-si può usare l'observer pattern per mettere in sleep il thread/processo che si
+occupa di mandare i messaggi ai client mandando un segnale di avviso che ci sono
+messaggi;
+  il thread si rimette in wait/sleep quando trova tutte le liste dei messaggi in
+  entrata degli utenti vuote (alias: il contatore dei messaggi mandati == lenght
+  della lista (dove lenght della lista è la lunghezza della lista utilizzata))
+
+
+//??
+-tutto il meccanismo illustrato può essere wrappato tramite un thread recive server
+che "invia" il messaggio sulla IPC FIFO (bisogna crearla non bloccante forse), e
+manda un segnale all'altro processo server sender che manda il messaggio
+a tutti gli utenti
