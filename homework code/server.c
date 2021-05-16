@@ -20,12 +20,12 @@
 #define MAX_CLIENT_QUEUE_REQUEST 16
 #define BUFFER_SIZE_MESSAGE 1024
 
-void error(const char *msg)
-{
-    perror(msg);
-    int exitno = 1;
-    pthread_exit(&exitno);
-}
+// void error(const char *msg)
+// {
+//     perror(msg);
+//     int exitno = 1;
+//     pthread_exit(&exitno);
+// }
 //PER INTERCETTARE I SIGNAL
 // void intHandler(int dummy) {
 //     printf("\n%d\n", dummy);
@@ -51,14 +51,14 @@ int main(int argc, char *argv[]) {
 
    //setup socket
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-   if (sockfd < 0) error("ERROR opening socket");
+   if (sockfd < 0) perror("ERROR opening socket");
 
    bzero((char *) &serv_addr, sizeof(serv_addr));
 
    setup_server(&serv_addr, port);
 
    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-            error("ERROR on binding");
+            perror("ERROR on binding");
    //start socket connection
    listen(sockfd, MAX_CLIENT_QUEUE_REQUEST);
    clilen = sizeof(cli_addr);
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
    {
        client_fd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
        if (client_fd < 0)
-           error("ERROR on accept");
+           perror("ERROR on accept");
        if(pthread_create(&tid, NULL, &handle_client, client_fd)!=0)
            perror("Error while making thread");
    }
@@ -121,17 +121,17 @@ int handle_client(int client_fd){
   {
     bzero(buffer, BUFFER_SIZE_MESSAGE);
     byte_read = read(client_fd ,buffer, BUFFER_SIZE_MESSAGE);
-    if (byte_read <= 0)
-    {
-      error("ERROR reading from socket");
-      break;
-    }
-    printf("Here is the message: %s\n",buffer);
-    append_string_log(&global_log, buffer, byte_read);//GLOBAL
-    append_string_log(local_log, buffer, byte_read);//LOCAL
+    if (byte_read <= 0) break; //user disconnected
 
+    printf("Here is the message: %s\n",buffer);
+    char* log = append_string_log(&global_log, buffer, byte_read);//GLOBAL LOG
+    append_node(local_log, new_node(log)); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
   }
   close(client_fd);
+
+  print_linkedlist(local_log);
+  print_linkedlist(&global_log);
+
   return 0;
 }
 
@@ -142,13 +142,17 @@ void append_node_client_fd(int* client_fd){
   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
 }
 
-void append_string_log(struct linkedlist* linkedlist, const char*string, int len){
+char* append_string_log(struct linkedlist* linkedlist, char*string, int len){
   pthread_mutex_lock(&linkedlist->mutex);
-  char buffer[len];
-  strncpy(buffer, string, len);
-  struct node* node = new_node((void*)&buffer);
-  if(append_node(&global_log, node)) perror("Error while appending node to list");
+
+  char* buffer= (char*)malloc(sizeof(char)*len);
+  buffer = strncpy(buffer, string, len);
+  struct node* node = new_node((void*)buffer);
+  if(append_node(linkedlist, node))
+      perror("Error while appending node to list");
+
   pthread_mutex_unlock(&linkedlist->mutex);
+  return buffer;
 }
 
 

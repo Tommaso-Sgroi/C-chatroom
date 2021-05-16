@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <string.h>
 #include <unistd.h>
 
 struct node {
@@ -46,6 +47,7 @@ int remove_node(struct node* first, struct node* node_to_remove){
         //save prev and next
         struct node* prev = first->prev;
         struct node* next = first->next;
+        //free(first->value);//could be allocated in heap
         free(first);//deallocate space
         //link prev and next
         if(prev!=NULL) prev->next = next;
@@ -124,6 +126,15 @@ int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_lis
   return 0;
 }
 
+void print_linkedlist(struct linkedlist* linkedlist){
+    struct node* actual_node = linkedlist->first;
+    while(actual_node)
+    {
+      printf("%s\n", actual_node->value);
+      actual_node = actual_node->next;
+    }
+}
+
 // int main(int argc, char const *argv[]) {
 //   struct node* node = new_node("HELLO");
 //   struct node* node1 = new_node("WOrld");
@@ -132,10 +143,10 @@ int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_lis
 //   struct node* node4 = new_node("4");
 //
 //   struct linkedlist* linked_list = new_linkedlist(node);
-//   append_node(node1, linked_list);
-//   append_node(node2, linked_list);
-//   append_node(node3, linked_list);
-//   append_node(node4, linked_list);
+//   append_node(linked_list, node1);
+//   append_node(linked_list, node2);
+//   append_node(linked_list, node3);
+//   append_node(linked_list, node4);
 //
 //
 //   // struct node* first = insert_first(node4, node3);
@@ -144,7 +155,6 @@ int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_lis
 //   struct node* actual_node = linked_list->first;
 //   //
 //   // struct node* n = new_node_params(node2, node3, (void*)69);
-//   // remove_node(actual_node, n);
 //   //
 //   printf("lenght: %d\n", linked_list->lenght);
 //   while(actual_node)
