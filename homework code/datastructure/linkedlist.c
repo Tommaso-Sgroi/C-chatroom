@@ -13,12 +13,14 @@ struct linkedlist {
   struct node* first;
   struct node* last;
   int lenght;
+
+  pthread_mutex_t mutex;
 };
 
 //NODE
 //UTILITY FUNCTIONS
 int equals(struct node* node, struct node* node1){
-  return node == node1; //NON SONO SICURO FUNZIONI
+  return node == node1 || node->value == node1->value; //NON SONO SICURO FUNZIONI
 }
 
 struct node* insert_first(struct node* first, struct node* insert){
@@ -81,23 +83,32 @@ struct node* new_node_params(struct node* prev, struct node* next, void* value){
 //---------------------------------------------------
 
 //LINKED LIST FUNCTIONS
+
+void initialize_void_linkedlist(struct linkedlist* linked_list, struct node* node){
+  linked_list->first = node;
+  linked_list->last = linked_list->first;
+  linked_list->lenght = 1;
+}
+
 struct linkedlist* new_linkedlist(struct node* node){
   struct linkedlist* linked_list = (struct linkedlist*)malloc(sizeof(struct linkedlist));
   if(node != NULL) //if a value is passed so linked list must have 1 node
-  {                     //initialized with value else a void list is required
-    linked_list->first = node;
-    linked_list->last = linked_list->first;
-    linked_list->lenght = 1;
-  }
+      initialize_void_linkedlist(linked_list, node);//initialized with value else a void list is required
+
   return linked_list;
 }
 
-int append_node(struct node* node, struct linkedlist* linked_list){
+int append_node(struct linkedlist* linked_list, struct node* node){
   if(linked_list == NULL || node == NULL) return 1;
-  append_last(linked_list->last, node); //no error could occur
-  linked_list-> last = node;
-  linked_list->lenght++;// = linked_list-> ++lenght;
 
+  if(linked_list->lenght==0)//void linkedlist
+    initialize_void_linkedlist(linked_list, node);
+  else
+  {
+    append_last(linked_list->last, node); //no error could occur
+    linked_list-> last = node;
+    linked_list->lenght++;// = linked_list-> ++lenght;
+  }
   return 0;
 }
 
@@ -110,51 +121,52 @@ int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_lis
     }
   else if(remove_node(linked_list->first, node))
     linked_list->lenght--;
-}
-
-int main(int argc, char const *argv[]) {
-  struct node* node = new_node("HELLO");
-  struct node* node1 = new_node("WOrld");
-  struct node* node2 = new_node("Tired og this shit");
-  struct node* node3 = new_node("3");
-  struct node* node4 = new_node("4");
-
-  struct linkedlist* linked_list = new_linkedlist(node);
-  append_node(node1, linked_list);
-  append_node(node2, linked_list);
-  append_node(node3, linked_list);
-  append_node(node4, linked_list);
-
-
-  // struct node* first = insert_first(node4, node3);
-  // first = insert_first(first, node2);
-  // first = insert_first(first, node1);
-  struct node* actual_node = linked_list->first;
-  //
-  // struct node* n = new_node_params(node2, node3, (void*)69);
-  // remove_node(actual_node, n);
-  //
-  printf("lenght: %d\n", linked_list->lenght);
-  while(actual_node)
-  {
-    printf("%s\n", actual_node->value);
-    actual_node = actual_node->next;
-  }
-  printf("\n");
-  remove_node_from_linkedlist(node, linked_list);
-  remove_node_from_linkedlist(node4, linked_list);
-  remove_node_from_linkedlist(node2, linked_list);
-
-
-  actual_node = linked_list->first;
-  while(actual_node)
-  {
-    printf("%s\n", actual_node->value);
-    actual_node = actual_node->next;
-  }
-  printf("lenght: %d\n", linked_list->lenght);
-
-
-
   return 0;
 }
+
+// int main(int argc, char const *argv[]) {
+//   struct node* node = new_node("HELLO");
+//   struct node* node1 = new_node("WOrld");
+//   struct node* node2 = new_node("Tired og this shit");
+//   struct node* node3 = new_node("3");
+//   struct node* node4 = new_node("4");
+//
+//   struct linkedlist* linked_list = new_linkedlist(node);
+//   append_node(node1, linked_list);
+//   append_node(node2, linked_list);
+//   append_node(node3, linked_list);
+//   append_node(node4, linked_list);
+//
+//
+//   // struct node* first = insert_first(node4, node3);
+//   // first = insert_first(first, node2);
+//   // first = insert_first(first, node1);
+//   struct node* actual_node = linked_list->first;
+//   //
+//   // struct node* n = new_node_params(node2, node3, (void*)69);
+//   // remove_node(actual_node, n);
+//   //
+//   printf("lenght: %d\n", linked_list->lenght);
+//   while(actual_node)
+//   {
+//     printf("%s\n", actual_node->value);
+//     actual_node = actual_node->next;
+//   }
+//   printf("\n");
+//   remove_node_from_linkedlist(node, linked_list);
+//   remove_node_from_linkedlist(node4, linked_list);
+//   remove_node_from_linkedlist(node2, linked_list);
+//
+//
+//   actual_node = linked_list->first;
+//   while(actual_node)
+//   {
+//     printf("%s\n", actual_node->value);
+//     actual_node = actual_node->next;
+//   }
+//   printf("lenght: %d\n", linked_list->lenght);
+//
+//
+//
+//   return 0;
+// }

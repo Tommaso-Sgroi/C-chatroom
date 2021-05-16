@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+
 void error(const char *msg)
 {
     perror(msg);
@@ -43,7 +44,9 @@ int main(int argc, char *argv[])
 
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
         error("ERROR connecting");
-    while (1) {
+    printf("%s\n", "connection extablished");
+    while (1)
+    {
       printf("Please enter the message: ");
       bzero(buffer,256);
       fgets(buffer,255,stdin);
@@ -56,8 +59,8 @@ int main(int argc, char *argv[])
            error("ERROR reading from socket");
       printf("%s\n",buffer);
     }
-
     close(sockfd);
+    exit(0);
 
     return 0;
 }

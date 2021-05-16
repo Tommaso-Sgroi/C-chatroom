@@ -10,90 +10,240 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <signal.h>//TO REMOVE?
+#include <pthread.h>
 #include <signal.h>
+#include <string.h>
+#include "datastructure/linkedlist.c"
 #include "server.h"
 
 #define MAX_CLIENT_QUEUE_REQUEST 16
+#define BUFFER_SIZE_MESSAGE 1024
 
-void dostuff(int); /* function prototype */
 void error(const char *msg)
 {
     perror(msg);
-    exit(1);
+    int exitno = 1;
+    pthread_exit(&exitno);
 }
+//PER INTERCETTARE I SIGNAL
+// void intHandler(int dummy) {
+//     printf("\n%d\n", dummy);
+//
+// }
 
-int main(int argc, char *argv[])
-{
+struct linkedlist client_fd_linkedlist, global_log;
+
+
+int main(int argc, char *argv[]) {
   run(/*atoi(argv[1])*/4444);
 }
 
-/******** DOSTUFF() *********************
- There is a separate instance of this function
- for each connection.  It handles all communication
- once a connnection has been established.
- *****************************************/
-void dostuff (int sock)
-{
-   int n;
-   char buffer[256];
-
-   while (1) {
-     bzero(buffer,256);
-     n = read(sock,buffer,255);
-     if (n < 0) error("ERROR reading from socket");
-     printf("Here is the message: %s\n",buffer);
-     n = write(sock,"I got your message",18);
-     if (n < 0) error("ERROR writing to socket");
-   }
- }
-
- int setup_server(struct sockaddr_in* serv_addr, int port){
-   serv_addr->sin_family = AF_INET;
-   serv_addr->sin_addr.s_addr = INADDR_ANY;
-   serv_addr->sin_port = htons(port);
-   return 0;
- }
 
  int run(int port){
-   int sockfd, newsockfd, portno, pid;
+   //declare variables
+   int sockfd, client_fd, portno, pid;
    socklen_t clilen;
    struct sockaddr_in serv_addr, cli_addr;
+   pthread_t tid;
+   make_linkedlist();
+   setup_mutex();
 
-   // if (argc < 2) {
-   //     fprintf(stderr,"ERROR, no port provided\n");
-   //     exit(1);
-   // }
+   //setup socket
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-   if (sockfd < 0)
-      error("ERROR opening socket");
+   if (sockfd < 0) error("ERROR opening socket");
+
    bzero((char *) &serv_addr, sizeof(serv_addr));
 
-   setup_server(&serv_addr, port); //port must be taken from argv
-
+   setup_server(&serv_addr, port);
 
    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
             error("ERROR on binding");
-
+   //start socket connection
    listen(sockfd, MAX_CLIENT_QUEUE_REQUEST);
    clilen = sizeof(cli_addr);
-   while (1) {
-       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-       if (newsockfd < 0)
+   while (1)
+   {
+       client_fd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+       if (client_fd < 0)
            error("ERROR on accept");
-       pid = fork(); //TODO USE THREADS
-       if (pid < 0)
-           error("ERROR on fork");
-       if (pid == 0)  {
-           close(sockfd);
-           dostuff(newsockfd);/*
-           USE A CHILD PROCESS THAT POSSES THREADS CHE INTERAGISCONO CON L'UTENTE,
-           SI POSSONO TENERE I THREADS IN UNA LINKED LIST CHE CONTIENE LE INFO IL THREAD
-           E L'OGGETTO LOG PER GLI UTENTI
-           */
-           exit(0);
-       }
-       else close(newsockfd);
-   } /* end of while */
+       if(pthread_create(&tid, NULL, &handle_client, client_fd)!=0)
+           perror("Error while making thread");
+   }
    close(sockfd);
    return 0; /* we never get here */
  }
+
+
+
+ /*
+   SERVER STUFF
+ */
+
+  int setup_server(struct sockaddr_in* serv_addr, int port){
+    serv_addr->sin_family = AF_INET;
+    serv_addr->sin_addr.s_addr = INADDR_ANY;
+    serv_addr->sin_port = htons(port);
+    return 0;
+  }
+
+  int setup_mutex(){
+    if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0)
+    {
+      fprintf(stderr, "Error in pthread_mutex_init()\n");
+      exit(EXIT_FAILURE);
+    }
+    return 0;
+  }
+
+  int make_linkedlist(){
+    client_fd_linkedlist = *new_linkedlist(NULL);//void linked_list
+    return 0;
+  }
+
+
+
+/*
+THREAD CREATE
+*/
+
+
+
+int handle_client(int client_fd){
+  printf("%s: %d\n", "Handling client", client_fd);
+
+  struct linkedlist* local_log = new_linkedlist(NULL);//si può modificare mettendo all'inizio un nodo con l'indirizzo+nome
+  append_node_client_fd(&client_fd);
+
+  int byte_read;
+  char buffer[BUFFER_SIZE_MESSAGE];
+  while (1)
+  {
+    bzero(buffer, BUFFER_SIZE_MESSAGE);
+    byte_read = read(client_fd ,buffer, BUFFER_SIZE_MESSAGE);
+    if (byte_read <= 0)
+    {
+      error("ERROR reading from socket");
+      break;
+    }
+    printf("Here is the message: %s\n",buffer);
+    append_string_log(&global_log, buffer, byte_read);//GLOBAL
+    append_string_log(local_log, buffer, byte_read);//LOCAL
+
+  }
+  close(client_fd);
+  return 0;
+}
+
+void append_node_client_fd(int* client_fd){
+  pthread_mutex_lock(&client_fd_linkedlist.mutex);
+  if(append_node(&client_fd_linkedlist, new_node((void*)&client_fd))!=0)//error occured
+    perror("Error while appending node to linkedlist");
+  pthread_mutex_unlock(&client_fd_linkedlist.mutex);
+}
+
+void append_string_log(struct linkedlist* linkedlist, const char*string, int len){
+  pthread_mutex_lock(&linkedlist->mutex);
+  char buffer[len];
+  strncpy(buffer, string, len);
+  struct node* node = new_node((void*)&buffer);
+  if(append_node(&global_log, node)) perror("Error while appending node to list");
+  pthread_mutex_unlock(&linkedlist->mutex);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
