@@ -32,19 +32,31 @@
 //
 // }
 
-struct linkedlist client_fd_linkedlist, global_log;
+struct linkedlist client_fd_linkedlist;
+
+struct {
+  struct linkedlist* global_log;
+  pthread_cond_t new_message;
+} global_log;
 
 
 int main(int argc, char *argv[]) {
   setup();
-  run_consumer();
+  pthread_t tid;
+
+  if(pthread_create(&tid, NULL, &run_consumer, NULL)!=0)
+  {
+    perror("Cannot create consumer thread");
+    exit(1);
+  }
+
   run_producers(/*atoi(argv[1])*/4444);
 }
 
 //------------------------RUN------------------------------------------
  int run_producers(int port){
    //declare variables
-   int sockfd, client_fd, portno, pid;
+   int sockfd, client_fd;
    socklen_t clilen;
    struct sockaddr_in serv_addr, cli_addr;
    pthread_t tid;
@@ -74,9 +86,34 @@ int main(int argc, char *argv[]) {
    return 0; /* we never get here */
  }
 
-int run_consumer(){
-
+int run_consumer(void* null) {
+  int msg_read;
+  while (1) {
+    pthread_mutex_lock(&global_log.global_log->mutex);
+    printf("Waiting for message\n");
+    pthread_cond_wait(&global_log.new_message, &global_log.global_log->mutex);
+    /*
+      READ MESSAGE
+    */
+    struct node* actual_node = global_log.global_log->first;
+    /*
+    int iter; msg_read+=1;
+    while(actual_node)
+    {
+      if(msg_read<=iter++)
+        printf("%s\n", actual_node->value); //PER ORA FUNZIONA MA PUO ESSERE MIGLIORATO
+      actual_node = actual_node->next;      //TENENDO TRACCIA DEL LAST ELEMENT DELLA LINKED LIST TROVATO PER ULTIMO 
+    }
+    */
+    /*
+      READ MESSAGE
+    */
+    pthread_mutex_unlock(&global_log.global_log->mutex);
+  }
+  return 0;
 }
+
+
 
  /*
    SERVER STUFF
@@ -90,24 +127,30 @@ int run_consumer(){
   }
 
   void setup(){
-    setup_mutex();
     make_linkedlist();
+    setup_mutex();
+    setup_cond();
   }
 
+  void setup_cond() {
+    if (pthread_cond_init(&global_log.new_message, NULL) != 0) {
+        perror("Error in pthread_cond_init()\n");
+        exit(EXIT_FAILURE);
+    }
+  }
 
-  int setup_mutex(){
-    if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0)
+  void setup_mutex(){
+
+    if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0 || pthread_mutex_init(&global_log.global_log->mutex, NULL) != 0)
     {
       fprintf(stderr, "Error in pthread_mutex_init()\n");
       exit(EXIT_FAILURE);
     }
-    return 0;
   }
 
-  int make_linkedlist(){
+  void make_linkedlist(){
     client_fd_linkedlist = *new_linkedlist(NULL);//void linked_list
-    global_log = *new_linkedlist(NULL);//void global_log
-    return 0;
+    global_log.global_log = new_linkedlist(NULL);//void global_log
   }
 
 
@@ -132,7 +175,7 @@ int handle_client(int client_fd){
     byte_read = read(client_fd ,buffer, BUFFER_SIZE_MESSAGE);
     if (byte_read <= 0) break; //user disconnected
     printf("Here is the message: %s\n",buffer);
-    char* log = append_string_log(&global_log, buffer, byte_read);//GLOBAL LOG
+    char* log = append_string_log(buffer, byte_read);//GLOBAL LOG
     append_node(local_log, new_node(log)); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
 
     // n = write(sock,"I got your message",18);
@@ -140,9 +183,8 @@ int handle_client(int client_fd){
   }
   close(client_fd);
   remove_node_client_fd(node_client_fd);
-
-  print_linkedlist(local_log);
-  print_linkedlist(&global_log);
+  print_linkedlist(&client_fd_linkedlist);
+  //print_linkedlist(&global_log);
 
   return 0;
 }
@@ -154,28 +196,29 @@ struct node* append_node_client_fd(int* client_fd){
 
   if(append_node(&client_fd_linkedlist, node)!=0)//error occured
     perror("Error while appending node to linkedlist");
-    
+
   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
   return node;
 }
 
-void remove_node_client_fd(node* client_fd){
+void remove_node_client_fd(struct node* client_fd){
   pthread_mutex_lock(&client_fd_linkedlist.mutex);
   if(remove_node_from_linkedlist(client_fd, &client_fd_linkedlist)!=0)//error occured
     perror("Error while appending node to linkedlist");
   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
 }
 
-char* append_string_log(struct linkedlist* linkedlist, char*string, int len){
-  pthread_mutex_lock(&linkedlist->mutex);
+char* append_string_log(/*struct linkedlist* linkedlist, */char*string, int len){
+  pthread_mutex_lock(&global_log.global_log->mutex);
 
   char* buffer= (char*)malloc(sizeof(char)*len);
   buffer = strncpy(buffer, string, len);
   struct node* node = new_node((void*)buffer);
-  if(append_node(linkedlist, node))
+  if(append_node(global_log.global_log, node))
       perror("Error while appending node to list");
 
-  pthread_mutex_unlock(&linkedlist->mutex);
+  pthread_cond_signal(&global_log.new_message);
+  pthread_mutex_unlock(&global_log.global_log->mutex);
   return buffer;
 }
 

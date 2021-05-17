@@ -130,7 +130,7 @@ void print_linkedlist(struct linkedlist* linkedlist){
     struct node* actual_node = linkedlist->first;
     while(actual_node)
     {
-      printf("%s\n", actual_node->value);
+      printf("%d\n", *(int*)actual_node->value);
       actual_node = actual_node->next;
     }
 }
