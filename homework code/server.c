@@ -36,18 +36,18 @@ struct linkedlist client_fd_linkedlist, global_log;
 
 
 int main(int argc, char *argv[]) {
-  run(/*atoi(argv[1])*/4444);
+  setup();
+  run_consumer();
+  run_producers(/*atoi(argv[1])*/4444);
 }
 
-
- int run(int port){
+//------------------------RUN------------------------------------------
+ int run_producers(int port){
    //declare variables
    int sockfd, client_fd, portno, pid;
    socklen_t clilen;
    struct sockaddr_in serv_addr, cli_addr;
    pthread_t tid;
-   make_linkedlist();
-   setup_mutex();
 
    //setup socket
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -74,7 +74,9 @@ int main(int argc, char *argv[]) {
    return 0; /* we never get here */
  }
 
+int run_consumer(){
 
+}
 
  /*
    SERVER STUFF
@@ -87,6 +89,12 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
+  void setup(){
+    setup_mutex();
+    make_linkedlist();
+  }
+
+
   int setup_mutex(){
     if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0)
     {
@@ -98,6 +106,7 @@ int main(int argc, char *argv[]) {
 
   int make_linkedlist(){
     client_fd_linkedlist = *new_linkedlist(NULL);//void linked_list
+    global_log = *new_linkedlist(NULL);//void global_log
     return 0;
   }
 
@@ -113,7 +122,7 @@ int handle_client(int client_fd){
   printf("%s: %d\n", "Handling client", client_fd);
 
   struct linkedlist* local_log = new_linkedlist(NULL);//si può modificare mettendo all'inizio un nodo con l'indirizzo+nome
-  append_node_client_fd(&client_fd);
+  struct node* node_client_fd = append_node_client_fd(&client_fd);
 
   int byte_read;
   char buffer[BUFFER_SIZE_MESSAGE];
@@ -122,12 +131,15 @@ int handle_client(int client_fd){
     bzero(buffer, BUFFER_SIZE_MESSAGE);
     byte_read = read(client_fd ,buffer, BUFFER_SIZE_MESSAGE);
     if (byte_read <= 0) break; //user disconnected
-
     printf("Here is the message: %s\n",buffer);
     char* log = append_string_log(&global_log, buffer, byte_read);//GLOBAL LOG
     append_node(local_log, new_node(log)); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
+
+    // n = write(sock,"I got your message",18);
+    // if (n < 0) error("ERROR writing to socket");
   }
   close(client_fd);
+  remove_node_client_fd(node_client_fd);
 
   print_linkedlist(local_log);
   print_linkedlist(&global_log);
@@ -135,9 +147,21 @@ int handle_client(int client_fd){
   return 0;
 }
 
-void append_node_client_fd(int* client_fd){
+struct node* append_node_client_fd(int* client_fd){
+  struct node* node = new_node((void*)client_fd);
+
   pthread_mutex_lock(&client_fd_linkedlist.mutex);
-  if(append_node(&client_fd_linkedlist, new_node((void*)&client_fd))!=0)//error occured
+
+  if(append_node(&client_fd_linkedlist, node)!=0)//error occured
+    perror("Error while appending node to linkedlist");
+    
+  pthread_mutex_unlock(&client_fd_linkedlist.mutex);
+  return node;
+}
+
+void remove_node_client_fd(node* client_fd){
+  pthread_mutex_lock(&client_fd_linkedlist.mutex);
+  if(remove_node_from_linkedlist(client_fd, &client_fd_linkedlist)!=0)//error occured
     perror("Error while appending node to linkedlist");
   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
 }
