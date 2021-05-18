@@ -7,7 +7,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <pthread.h>
-#define BUFFER_SIZE_MESSAGE 1024
+#include "size.h"
+#include "client.h"
 
 void error(const char *msg, int sockfd)
 {
@@ -16,8 +17,13 @@ void error(const char *msg, int sockfd)
     exit(0);
 }
 
-static void* listen_message(void* fd){
-  int sockfd = *(int*)fd;
+struct tm* get_time(){
+	time_t t = time(NULL);
+	return localtime(&t);
+}
+
+static void* listen_message(int* fd){
+  int sockfd = *fd;
   char buffer[BUFFER_SIZE_MESSAGE];
   while (1)
   {
@@ -29,16 +35,30 @@ static void* listen_message(void* fd){
   }
 }
 
-static void send_message(void* fd){
-  int sockfd = *(int*)fd;
-  char buffer[BUFFER_SIZE_MESSAGE];
+static void send_message(void* usr_info){
+  struct user_info* usr = (struct user_info*)usr_info;
+
+  int sockfd = usr->fd;
+  const char* name = usr->name;
+
+  char buffer[BUFFER_SIZE_MESSAGE + BUFFER_DATE_SIZE + BUFFER_NAME_SIZE];
   while (1)
   {
     //printf("Please enter the message: ");
-    bzero(buffer,BUFFER_SIZE_MESSAGE);
-    fgets(buffer,BUFFER_SIZE_MESSAGE-1,stdin);
-    int n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0)
+    bzero(buffer,BUFFER_SIZE_MESSAGE + BUFFER_DATE_SIZE);
+    char message[BUFFER_SIZE_MESSAGE];
+    fgets(message, BUFFER_SIZE_MESSAGE-1, stdin);
+
+    struct tm tm = *get_time();
+    char timestamp[BUFFER_DATE_SIZE];
+    snprintf(timestamp, BUFFER_DATE_SIZE, "%d-%d-%d %d:%d:%d%c", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, '\n');
+
+    strcat(buffer, timestamp);
+    strcat(buffer, name);
+    strcat(buffer, message);
+
+    int bye_write = write(sockfd, buffer, strlen(buffer));
+    if (bye_write < 0)
          error("ERROR writing to socket", sockfd);
   }
 }
@@ -52,7 +72,7 @@ int main(int argc, char *argv[])
     struct hostent *server;
     pthread_t tid;
 
-    char buffer[BUFFER_SIZE_MESSAGE];
+    char name[BUFFER_NAME_SIZE]; //bisogna fare scanf con \n
     // if (argc < 3) {
     //    fprintf(stderr,"usage %s hostname port\n", argv[0]);
     //    exit(0);
@@ -78,7 +98,7 @@ int main(int argc, char *argv[])
         error("ERROR connecting", sockfd);
     printf("%s\n", "connection extablished");
 
-    if(pthread_create(&tid, NULL, &send_message, (void*)&sockfd)!=0)
+    if(pthread_create(&tid, NULL, &send_message, (void*)new_user_info(sockfd, "AAA\n"/*, "0"*/))!=0)
         perror("Error while making thread");
     listen_message(&sockfd);
     close(sockfd);
