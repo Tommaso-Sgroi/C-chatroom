@@ -153,10 +153,6 @@ void print_linkedlist(struct linkedlist* linkedlist){
 //   // first = insert_first(first, node2);
 //   // first = insert_first(first, node1);
 //   struct node* actual_node = linked_list->first;
-//   //
-//   // struct node* n = new_node_params(node2, node3, (void*)69);
-//   //
-//   printf("lenght: %d\n", linked_list->lenght);
 //   while(actual_node)
 //   {
 //     printf("%s\n", actual_node->value);

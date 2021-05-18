@@ -152,7 +152,7 @@ int run_consumer(void* null) {
         global_log.last_read = global_log.last_read->next; //aggiorno l'ultimo messaggio
       else break;
     }
-    printf("Ultimo messaggio: %s\n", global_log.last_read->value);
+    printf("Ultimo messaggio: %s\n", ((sender_msg*)global_log.last_read->value)->message);
 
     pthread_mutex_unlock(&global_log.global_log->mutex);
   }
