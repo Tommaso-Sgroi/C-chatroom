@@ -87,24 +87,38 @@ int main(int argc, char *argv[]) {
  }
 
 int run_consumer(void* null) {
-  int msg_read;
-  while (1) {
+
+  struct node* last_message = global_log.global_log->first;
+  while (1)
+  {
     pthread_mutex_lock(&global_log.global_log->mutex);
-    printf("Waiting for message\n");
+    puts("Waiting for message\n");
     pthread_cond_wait(&global_log.new_message, &global_log.global_log->mutex);
     /*
       READ MESSAGE
     */
-    struct node* actual_node = global_log.global_log->first;
-    /*
-    int iter; msg_read+=1;
-    while(actual_node)
+    if(last_message == NULL)//empty linkedlist
+      last_message = global_log.global_log->first;
+    else last_message = last_message->next;
+    while(1)//itero sulla linked list dei log
     {
-      if(msg_read<=iter++)
-        printf("%s\n", actual_node->value); //PER ORA FUNZIONA MA PUO ESSERE MIGLIORATO
-      actual_node = actual_node->next;      //TENENDO TRACCIA DEL LAST ELEMENT DELLA LINKED LIST TROVATO PER ULTIMO 
+      //itero sui client_fd
+      pthread_mutex_lock(&client_fd_linkedlist.mutex);
+      struct node* actual_node = client_fd_linkedlist.first;
+      while(actual_node)
+      {
+        printf("Mando messaggi a %i\n", *(int*)actual_node->value);
+        int n = write(*(int*)actual_node->value, (char*)last_message->value, BUFFER_SIZE_MESSAGE); //we can ingore errors on write because
+        actual_node = actual_node->next;                      //the thread associated to this fd will close it self the connection
+        printf("%i\n", n);
+      }
+      pthread_mutex_unlock(&client_fd_linkedlist.mutex);
+      //fine iterazione sui client_fd
+      if(last_message->next)
+        last_message = last_message->next; //aggiorno l'ultimo messaggio
+      else break;
     }
-    */
+    printf("Ultimo messaggio: %s\n", last_message->value);
     /*
       READ MESSAGE
     */

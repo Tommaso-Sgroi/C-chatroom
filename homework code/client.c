@@ -6,21 +6,53 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <pthread.h>
+#define BUFFER_SIZE_MESSAGE 1024
 
-
-void error(const char *msg)
+void error(const char *msg, int sockfd)
 {
+    close(sockfd);
     perror(msg);
     exit(0);
 }
+
+static void* listen_message(void* fd){
+  int sockfd = *(int*)fd;
+  char buffer[BUFFER_SIZE_MESSAGE];
+  while (1)
+  {
+    bzero(buffer,BUFFER_SIZE_MESSAGE);
+    int n = read(sockfd, buffer, BUFFER_SIZE_MESSAGE-1);
+    if (n < 0)
+         error("ERROR reading from socket", sockfd);
+    printf("%s\n",buffer);
+  }
+}
+
+static void send_message(void* fd){
+  int sockfd = *(int*)fd;
+  char buffer[BUFFER_SIZE_MESSAGE];
+  while (1)
+  {
+    //printf("Please enter the message: ");
+    bzero(buffer,BUFFER_SIZE_MESSAGE);
+    fgets(buffer,BUFFER_SIZE_MESSAGE-1,stdin);
+    int n = write(sockfd,buffer,strlen(buffer));
+    if (n < 0)
+         error("ERROR writing to socket", sockfd);
+  }
+}
+
+
 
 int main(int argc, char *argv[])
 {
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
+    pthread_t tid;
 
-    char buffer[256];
+    char buffer[BUFFER_SIZE_MESSAGE];
     // if (argc < 3) {
     //    fprintf(stderr,"usage %s hostname port\n", argv[0]);
     //    exit(0);
@@ -29,7 +61,7 @@ int main(int argc, char *argv[])
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
-        error("ERROR opening socket");
+        error("ERROR opening socket", -1);
     server = gethostbyname(/*argv[1]*/"localhost");
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
@@ -43,22 +75,12 @@ int main(int argc, char *argv[])
     serv_addr.sin_port = htons(portno);
 
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
-        error("ERROR connecting");
+        error("ERROR connecting", sockfd);
     printf("%s\n", "connection extablished");
-    while (1)
-    {
-      printf("Please enter the message: ");
-      bzero(buffer,256);
-      fgets(buffer,255,stdin);
-      n = write(sockfd,buffer,strlen(buffer));
-      if (n < 0)
-           error("ERROR writing to socket");
-      bzero(buffer,256);
-      // n = read(sockfd,buffer,255);
-      // if (n < 0)
-      //      error("ERROR reading from socket");
-      // printf("%s\n",buffer);
-    }
+
+    if(pthread_create(&tid, NULL, &send_message, (void*)&sockfd)!=0)
+        perror("Error while making thread");
+    listen_message(&sockfd);
     close(sockfd);
     exit(0);
 

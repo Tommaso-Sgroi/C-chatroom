@@ -9,3 +9,9 @@ struct node* append_node_client_fd(int* client_fd);
 void remove_node_client_fd(struct node* client_fd);
 char* append_string_log(/*struct linkedlist* linkedlist, */char*string, int len);
 void setup();
+
+
+typedef struct{
+  char* message;
+  int sockfd;
+}sender;
