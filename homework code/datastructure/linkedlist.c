@@ -132,12 +132,12 @@ int append_node_first(struct linkedlist* linked_list, struct node* node){
 int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_list){
   if(node == linked_list->first)//IDK why but if the first element is deleted it make a segmentation fault
     {
-      linked_list->first = node->next;
+      linked_list->first = node->next != NULL? node->next: NULL;
       linked_list->lenght--;
       free(node);
     }
   else if(remove_node(linked_list->first, node))
-    linked_list->lenght--;
+      linked_list->lenght--;
   return 0;
 }
 

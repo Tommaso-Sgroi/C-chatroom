@@ -2,11 +2,6 @@
 #include <stdlib.h>
 
 
-
-unsigned long get_timestamp(){
-  return (unsigned long)time(NULL);
-}
-
 struct user_info{
   int fd;
   char* name;

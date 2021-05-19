@@ -104,7 +104,6 @@ int main(int argc, char *argv[]) {
      bzero(buffer, BUFFER_SIZE_MESSAGE);
      byte_read = read(client_fd ,buffer, BUFFER_SIZE_MESSAGE);
      if (byte_read <= 0) break; //user disconnected
-     printf("Here is the message: %s\n",buffer);
 
      char* log = append_string_log(buffer, byte_read, client_fd, addr);//GLOBAL LOG
      append_node(local_log, new_node(log)); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
@@ -126,7 +125,6 @@ int run_consumer(void* null) {
   while (1)
   {
     pthread_mutex_lock(&global_log.global_log->mutex);
-    puts("Waiting for message\n");
     pthread_cond_wait(&global_log.new_message, &global_log.global_log->mutex);
 
     if(global_log.last_read == NULL)//empty linkedlist
@@ -152,7 +150,7 @@ int run_consumer(void* null) {
         global_log.last_read = global_log.last_read->next; //aggiorno l'ultimo messaggio
       else break;
     }
-    printf("Ultimo messaggio: %s\n", ((sender_msg*)global_log.last_read->value)->message);
+    //printf("Ultimo messaggio: %s\n", ((sender_msg*)global_log.last_read->value)->message);
 
     pthread_mutex_unlock(&global_log.global_log->mutex);
   }
@@ -253,7 +251,6 @@ char* append_string_log(char*string, int len, int client_fd, char* addr){
   pthread_mutex_unlock(&global_log.global_log->mutex);
   return buffer; //return the heap buffer pointer
 }
-
 
 // void parse_timestamp(char* buffer, struct tm* parsedTime){
 //   int year, month, day, hours, min, sec;
