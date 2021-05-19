@@ -18,10 +18,10 @@ void error(const char *msg, int sockfd)
 }
 
 void get_time(char* buffer){
-  bzero(buffer, BUFFER_DATE_SIZE);
+  memset(buffer, 0,BUFFER_DATE_SIZE);
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
-  snprintf(buffer, BUFFER_DATE_SIZE, "%d-%d-%d %d:%d:%d%c", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, '\n');
+  snprintf(buffer, BUFFER_DATE_SIZE, "%d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
 char* str_trim_nl (char* arr, int length) {
@@ -52,7 +52,7 @@ static void* listen_message(int* fd){
   char buffer[BUFFER_SIZE_MESSAGE];
   while (1)
   {
-    bzero(buffer,BUFFER_SIZE_MESSAGE);
+    memset(buffer, 0, BUFFER_SIZE_MESSAGE);
     int n = read(sockfd, buffer, BUFFER_SIZE_MESSAGE);
     if (n <= 0)
          error("ERROR reading from socket", sockfd);
@@ -62,7 +62,7 @@ static void* listen_message(int* fd){
 }
 
 static void send_hello(int sockfd, const char* name){
-  char has_joined[]= "JOINED--> ";
+  char has_joined[]= "JOINED-->";
   char buff_out[strlen(name) + BUFFER_DATE_SIZE + strlen(has_joined)];
   char time [BUFFER_DATE_SIZE];
   char new_name[strlen(has_joined)+BUFFER_NAME_SIZE];
@@ -96,7 +96,7 @@ static void send_message(void* usr_info){
   while (1)
   {
 
-    bzero(buffer,BUFFER_SIZE_MESSAGE + BUFFER_DATE_SIZE + BUFFER_NAME_SIZE);
+    memset(buffer, 0, BUFFER_DATE_SIZE + BUFFER_NAME_SIZE);
 
     char message[BUFFER_SIZE_MESSAGE];
     print_n_flush();
@@ -147,13 +147,11 @@ int main(int argc, char *argv[])
         fprintf(stderr,"ERROR, no such host\n");
         exit(0);
     }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
+    memset((char *) &serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    // bcopy((char *)server->h_addr,
-    //      (char *)&serv_addr.sin_addr.s_addr,
-    //      server->h_length);
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr(ip);
+    bcopy((char *)server->h_addr,
+         (char *)&serv_addr.sin_addr.s_addr,
+         server->h_length);
     serv_addr.sin_port = htons(portno);
 
     if(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)

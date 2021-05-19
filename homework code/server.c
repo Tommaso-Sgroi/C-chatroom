@@ -32,7 +32,7 @@
 //     printf("\n%d\n", dummy);
 //
 // }
-
+char null_addr []= " ";
 struct linkedlist client_fd_linkedlist;
 
 struct {
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
    if (sockfd < 0) perror("ERROR opening socket");
 
-   bzero((char *) &serv_addr, sizeof(serv_addr));
+   memset((char *) &serv_addr, 0, sizeof(serv_addr));
 
    setup_server(&serv_addr, port);
 
@@ -96,15 +96,21 @@ int main(int argc, char *argv[]) {
    struct linkedlist* local_log = new_linkedlist(NULL);//si può modificare mettendo all'inizio un nodo con l'indirizzo+nome
    struct node* node_client_fd = append_node_client_fd(&client_fd);
 
-   int byte_read;
+   int byte_read, get_name;
+   char name[BUFFER_NAME_SIZE-1];
    char buffer[BUFFER_SIZE_MESSAGE];
 
    while (1)
    {
-     bzero(buffer, BUFFER_SIZE_MESSAGE);
+     memset(buffer, 0, BUFFER_SIZE_MESSAGE);
      byte_read = read(client_fd ,buffer, BUFFER_SIZE_MESSAGE);
      if (byte_read <= 0) break; //user disconnected
-
+     if(get_name == 0)
+     {
+       get_username(buffer, name);
+       printf("%s\n%s\n", buffer, name);
+       ++get_name;
+     }
      char* log = append_string_log(buffer, byte_read, client_fd, addr);//GLOBAL LOG
      append_node(local_log, new_node(log)); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
 
@@ -113,10 +119,34 @@ int main(int argc, char *argv[]) {
    }
    close(client_fd);
    remove_node_client_fd(node_client_fd);
-   print_linkedlist(&client_fd_linkedlist);
-   //print_linkedlist(&global_log);
+   send_goodbye(buffer, name, local_log);
 
    return 0;
+ }
+
+ void send_goodbye(char* buffer, char* name, struct linkedlist* local_log){
+
+   memset(buffer, 0, BUFFER_SIZE_MESSAGE);
+   time_t t = time(NULL);
+   struct tm tm = *localtime(&t);
+   snprintf(buffer, BUFFER_SIZE_MESSAGE, "%d-%d-%d %d:%d:%d\n%s%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,"HAS LEFT THE CHATROOM-->", name);
+   char* log = append_string_log(buffer, strlen(buffer), -1, null_addr);//GLOBAL LOG
+   append_node(local_log, new_node(log));
+ }
+
+
+ void get_username(char*message, char* name){
+   int flag;
+   unsigned long int len = strlen(message);
+   for(unsigned long int i = 0; i<len; i++)
+   {
+     if(message[i]=='>')//has joined -->
+     {
+        while (message[++i] != '\n')
+         name[flag++] = message[i];
+       break;
+     }
+   }
  }
 
 int run_consumer(void* null) {
@@ -138,6 +168,7 @@ int run_consumer(void* null) {
 
       struct node* actual_client_fd_node = client_fd_linkedlist.first;
       sender_msg* sender = (sender_msg*)global_log.last_read->value;
+
       while(actual_client_fd_node)
       {
         if(*(int*)actual_client_fd_node->value != sender->sockfd || check_peer(sender->sockfd, sender->addr) != 0) //if false the message has been send by same user so discard
@@ -229,7 +260,7 @@ void remove_node_client_fd(struct node* client_fd){
 char* append_string_log(char*string, int len, int client_fd, char* addr){
   pthread_mutex_lock(&global_log.global_log->mutex);
 
-  char* buffer= (char*)malloc(sizeof(char)*len); //allocate in heap the message (so is not lost at the end of function)
+  char* buffer= (char*)calloc(len, sizeof(char)); //allocate in heap the message (so is not lost at the end of function)
   buffer = strncpy(buffer, string, len);
 
   sender_msg* msg = new_sender_msg(buffer, client_fd, addr);
@@ -299,7 +330,6 @@ struct node* check_youngest_msg(struct node* node, struct node* other){
   }
   return append_before;
 }
-
 
 
 
