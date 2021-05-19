@@ -231,70 +231,76 @@ void remove_node_client_fd(struct node* client_fd){
 char* append_string_log(char*string, int len, int client_fd, char* addr){
   pthread_mutex_lock(&global_log.global_log->mutex);
 
-  char* buffer= (char*)malloc(sizeof(char)*len);
+  char* buffer= (char*)malloc(sizeof(char)*len); //allocate in heap the message (so is not lost at the end of function)
   buffer = strncpy(buffer, string, len);
 
   sender_msg* msg = new_sender_msg(buffer, client_fd, addr);
-  struct node* node = new_node((void*)msg);
+  struct node* node = new_node((void*)msg);//new message node
+  if(global_log.last_read && global_log.last_read->next) //has next; alias-> there are other messages in queue to be sent
+  {                                                       //must check also uf at least one message is readed
+    struct node* append_before = check_youngest_msg(node, global_log.last_read); //node older than new message
+    struct node* tmp = insert_first(append_before, node); //new node is add first ONLY if is older than anoter msg in queue
 
-  struct node* youngest = check_youngest_msg(node, global_log.last_read);
-  if(youngest) insert_first(youngest, node);
+    if(global_log.global_log->lenght == 1 && tmp && global_log.global_log->first == global_log.last_read) //special case to handle -> if there is 1 msg not send and new msg is older
+      global_log.global_log->first = node; //older message is first pos in global_log
+    else if(tmp == NULL) //or there arent other msg older than new msg
+      append_node(global_log.global_log, node);//append node in head of list
+  }
+  else append_node(global_log.global_log, node); //else there arent msg in queue
 
-  if(append_node(global_log.global_log, node))
-      perror("Error while appending node to list");
-
-  //bisogna creare il timestamp dalle info
+  //signal the consumer and release lock
   pthread_cond_signal(&global_log.new_message);
   pthread_mutex_unlock(&global_log.global_log->mutex);
-  return buffer;
+  return buffer; //return the heap buffer pointer
 }
 
 
-void parse_timestamp(char* buffer, struct tm* parsedTime){
-  int year, month, day, hours, min, sec;
-  // ex: 2009-10-29
-  if(sscanf(buffer, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hours,  &min, &sec) != EOF)
-  {
-    time_t rawTime;
-    time(&rawTime);
-    parsedTime = localtime(&rawTime);
-
-    // tm_year is years since 1900
-    parsedTime->tm_year = year - 1900;
-    // tm_months is months since january
-    parsedTime->tm_mon = month - 1;
-    parsedTime->tm_mday = day;
-    parsedTime->tm_hour = hours;
-    parsedTime->tm_min = min;
-    parsedTime->tm_sec = sec;
-  }
-}
+// void parse_timestamp(char* buffer, struct tm* parsedTime){
+//   int year, month, day, hours, min, sec;
+//   // ex: 2009-10-29
+//   if(sscanf(buffer, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hours,  &min, &sec) != EOF)
+//   {
+//     time_t rawTime;
+//     time(&rawTime);
+//     parsedTime = localtime(&rawTime);
+//
+//     // tm_year is years since 1900
+//     parsedTime->tm_year = year - 1900;
+//     // tm_months is months since january
+//     parsedTime->tm_mon = month - 1;
+//     parsedTime->tm_mday = day;
+//     parsedTime->tm_hour = hours;
+//     parsedTime->tm_min = min;
+//     parsedTime->tm_sec = sec;
+//   }
+// }
 
 struct node* check_youngest_msg(struct node* node, struct node* other){
-  if(node == NULL || other == NULL) return NULL;
+  if(node == NULL || other == NULL || node == other) return NULL;
   sender_msg *sender = (sender_msg*) node->value;
   sender_msg *reciver = (sender_msg*) other->value;
-  if(other->next != NULL)
+  struct node* append_before;
+  struct node* actual_node = other;
+
+	timestamp sender_ts = *new_timestamp(sender->message);
+  while(actual_node)
   {
-      struct node* append_before;
-      struct node* actual_node = other;
-      while(actual_node)
-      {
-        struct tm sender_tm, reciver_tm;
-        parse_timestamp(sender->message, &sender_tm);
-        parse_timestamp(reciver->message, &reciver_tm);
-        if(sender_tm.tm_year < reciver_tm.tm_year &&
-            sender_tm.tm_mon < reciver_tm.tm_mon &&
-            sender_tm.tm_mday < reciver_tm.tm_mday &&
-            sender_tm.tm_hour < reciver_tm.tm_hour &&
-            sender_tm.tm_min < reciver_tm.tm_min &&
-            sender_tm.tm_sec < reciver_tm.tm_sec) //if sender < reciver
-          append_before = actual_node; //metti il nodo dopo
-        actual_node = actual_node->next;
-      }
-      return actual_node;
+		timestamp reciver_ts = *new_timestamp(reciver->message);
+    if(sender_ts.year < reciver_ts.year)
+			append_before = actual_node;
+    else if(sender_ts.year == reciver_ts.year && sender_ts.month < reciver_ts.month)
+			append_before = actual_node;
+    else if(sender_ts.month == reciver_ts.month && sender_ts.day < reciver_ts.day)
+			append_before = actual_node;
+    else if(sender_ts.day == reciver_ts.day && sender_ts.hours < reciver_ts.hours)
+			append_before = actual_node;
+    else if(sender_ts.hours == reciver_ts.hours && sender_ts.min < reciver_ts.min)
+			append_before = actual_node;
+    else if(sender_ts.min == reciver_ts.min && sender_ts.sec < reciver_ts.sec) //if sender < reciver
+			append_before = actual_node;
+    actual_node = actual_node->next;
   }
-  return NULL;
+  return append_before;
 }
 
 

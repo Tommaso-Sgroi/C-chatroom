@@ -32,6 +32,16 @@ typedef struct{
   int cli_fd;
 }client_info;
 
+typedef struct{
+  int year, month, day, hours, min, sec;
+}timestamp;
+
+timestamp* new_timestamp(char* buffer){
+  timestamp* ts = (timestamp*) malloc(sizeof(timestamp));
+  sscanf(buffer, "%d-%d-%d %d:%d:%d", &ts->year, &ts->month, &ts->day, &ts->hours,  &ts->min, &ts->sec);
+  return ts;
+}
+
 sender_msg* new_sender_msg(char* message, int sockfd, char* addr){
   char* address = (char*) calloc(strlen(addr), sizeof(char));
   strncpy(address, addr, strlen(addr));

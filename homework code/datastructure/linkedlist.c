@@ -25,6 +25,7 @@ int equals(struct node* node, struct node* node1){
 }
 
 struct node* insert_first(struct node* first, struct node* insert){
+  if(first == insert || first == NULL || insert == NULL) return NULL;
   insert->next = first;
   insert-> prev = NULL;
   first->prev = insert;
@@ -109,6 +110,20 @@ int append_node(struct linkedlist* linked_list, struct node* node){
   {
     append_last(linked_list->last, node); //no error could occur
     linked_list-> last = node;
+    linked_list->lenght++;// = linked_list-> ++lenght;
+  }
+  return 0;
+}
+
+int append_node_first(struct linkedlist* linked_list, struct node* node){
+  if(linked_list == NULL || node == NULL) return 1;
+
+  if(linked_list->lenght==0)//void linkedlist
+    initialize_void_linkedlist(linked_list, node);
+  else
+  {
+    insert_first(linked_list->first, node); //no error could occur
+    linked_list-> first = node;
     linked_list->lenght++;// = linked_list-> ++lenght;
   }
   return 0;
