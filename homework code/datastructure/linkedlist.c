@@ -141,14 +141,14 @@ int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_lis
   return 0;
 }
 
-void print_linkedlist(struct linkedlist* linkedlist){
-    struct node* actual_node = linkedlist->first;
-    while(actual_node)
-    {
-      printf("%d\n", *(int*)actual_node->value);
-      actual_node = actual_node->next;
-    }
-}
+// void print_linkedlist(struct linkedlist* linkedlist){
+//     struct node* actual_node = linkedlist->first;
+//     while(actual_node)
+//     {
+//       printf("%s\n", ((sender_msg*)actual_node->value)->message);
+//       actual_node = actual_node->next;
+//     }
+// }
 
 // int main(int argc, char const *argv[]) {
 //   struct node* node = new_node("HELLO");

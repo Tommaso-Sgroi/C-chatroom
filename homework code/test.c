@@ -67,7 +67,15 @@ int main(){
 		append_node(linked, node1);
 	}
 
-
+	// char path_prefix [] = "./logs/";
+	// char path_suffix[] = ".txt";
+	// char path [strlen(path_prefix) + BUFFER_NAME_SIZE + strlen(path_suffix)];
+	// char real_name[BUFFER_NAME_SIZE];
+	// strncpy(real_name, name, strlen(name)-1);
+	// strcat(path, path_prefix);
+	// strcat(path, real_name);
+	// strcat(path, path_suffix);
+	// printf("%s\n", path);
 
 
 	printf("Message Appended %s\n", tmp == NULL? "NULL": ((sender_msg*)tmp->value)->message);

@@ -9,13 +9,17 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
+#include <fcntl.h>
 #include <signal.h>//TO REMOVE?
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
-#include "datastructure/linkedlist.c"
 #include <time.h>
+#include <dirent.h>
+#include <errno.h>
+#include "datastructure/linkedlist.c"
 #include "server.h"
 #include "size.h"
 
@@ -109,7 +113,7 @@ int main(int argc, char *argv[]) {
      {
        get_username(buffer, name);
        printf("%s\n%s\n", buffer, name);
-       ++get_name;
+       get_name++;
      }
      char* log = append_string_log(buffer, byte_read, client_fd, addr);//GLOBAL LOG
      append_node(local_log, new_node(log)); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
@@ -120,8 +124,70 @@ int main(int argc, char *argv[]) {
    close(client_fd);
    remove_node_client_fd(node_client_fd);
    send_goodbye(buffer, name, local_log);
+   store_local_log(local_log, client_info_, name);
+   free(local_log);
 
    return 0;
+ }
+
+ void store_local_log(struct linkedlist* local_log, client_info* info, char* name){
+    DIR* dir = opendir("logs");
+    if (dir)
+    {
+      closedir(dir);
+      /* Directory exists. */
+      char path_prefix [] = "./logs/";
+      char path_suffix[] = ".txt";
+      int len_path = strlen(path_prefix) + strlen(name)-1 + strlen(path_suffix);
+      char path [len_path];
+      memset(path, 0, len_path);
+      char real_name[strlen(name)-1];
+      strncat(real_name, name, strlen(name)-1);
+      strncat(path, path_prefix, strlen(path_prefix));
+      strncat(path, real_name, strlen(real_name));
+      strncat(path, path_suffix, strlen(path_suffix));
+      int fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0666);
+      if(fd < 0)
+      {
+        perror("Error while opening logs: ");
+        return;
+      }
+      int byte_w = write(fd, info->cli_addr, strlen(info->cli_addr));
+      if(byte_w < 0)
+      {
+        perror("Error while writing logs: ");
+        return;
+      }
+      byte_w = write(fd, "\n", 1);
+      if(byte_w < 0)
+      {
+        perror("Error while writing logs: ");
+        return;
+      }
+
+      struct node* actual_node = local_log->first;
+      while(actual_node)
+      {
+        char* message = (char*)actual_node->value;
+        byte_w = write(fd, message, strlen(message));
+        if(byte_w < 0) perror("Error while writing logs: ");
+
+        actual_node = actual_node->next;
+      }
+      close(fd);
+    }
+    else if (ENOENT == errno)
+    {
+        /* Directory does not exist. */
+        int r = mkdir("logs", 0777);
+        if(r < 0) perror("Cannot create /log dir");
+        else store_local_log(local_log, info, name); //se tutto va a buon fine allora richiama te stessa così che può ripetere tutti i passaggi correttamente
+    }
+    else
+    {
+      /* opendir() failed for some other reason. */
+        perror("Cannot open /log dir");
+    }
  }
 
  void send_goodbye(char* buffer, char* name, struct linkedlist* local_log){

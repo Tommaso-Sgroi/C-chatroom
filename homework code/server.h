@@ -44,6 +44,9 @@ timestamp* new_timestamp(char* buffer){
   return ts;
 }
 
+void store_local_log(struct linkedlist*, client_info*, char*);
+
+
 sender_msg* new_sender_msg(char* message, int sockfd, char* addr){
   char* address = (char*) calloc(strlen(addr), sizeof(char));
   strncpy(address, addr, strlen(addr));
