@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+//#include "datastructure/linkedlist.c"
 
 int setup_server(struct sockaddr_in* serv_addr, int port);
 int run_producers(int port);
@@ -24,7 +25,9 @@ void get_username(char*message, char* name);
 void send_goodbye(char* buffer, char* name, struct linkedlist* local_log);
 void store_global_log(char* msg, int fds);
 int check_username_already_taken(char*);
-
+void handle_client_name_taken(int client_fd);
+void handle_client_accept(struct node* username, char* name, struct node* node_client_fd, int* client_fd, struct linkedlist* local_log);
+int remove_node_username(struct node* username);
 
 typedef struct{
   char* message;

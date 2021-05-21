@@ -109,29 +109,24 @@ int main(int argc, char *argv[]) {
      if (byte_read <= 0) break; //user disconnected
      if(get_name == 0)
      {
-       // pthread_mutex_lock(&usernames.mutex);
+       int error_flag;
        get_username(buffer, name);
-       int write_b;
        pthread_mutex_lock(&usernames.mutex);
        if(check_username_already_taken(name))
        {
-         char* name_taken = "Name already taken\n";
-         write_b = write(client_fd, name_taken, strlen(name_taken));
-         close(client_fd);
-         //remove_node_client_fd(node_client_fd);
-         pthread_mutex_unlock(&usernames.mutex);
-         return 1;
+         handle_client_name_taken(client_fd);
+         error_flag = 1;
        }
        else //TODO VA SISTEMATO  UN ATTIMO
        {
-         struct node* username = new_node(name);
-         append_node(&usernames, username); //INTO FUNTION
-         pthread_mutex_unlock(&usernames.mutex);
+         username_node = new_node(name);
+         append_node(&usernames, username_node); //INTO FUNTION
          node_client_fd = append_node_client_fd(&client_fd);
          local_log = new_linkedlist(NULL);
        }
-       printf("%s\n%s\n", buffer, name);
+       pthread_mutex_unlock(&usernames.mutex);
        get_name++;
+       if(error_flag) return 1;
      }
      append_string_global_log(buffer, byte_read, client_fd, addr);//GLOBAL LOG
      append_string_local_log(local_log, buffer, byte_read); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
@@ -141,11 +136,26 @@ int main(int argc, char *argv[]) {
    }
    close(client_fd);
    remove_node_client_fd(node_client_fd);
+   remove_node_username(username_node);
    send_goodbye(buffer, name, local_log);
    store_local_log(local_log, client_info_, name);
    free(local_log);
 
    return 0;
+ }
+
+ int remove_node_username(struct node* username){
+   pthread_mutex_lock(&usernames.mutex);
+   int ret = remove_node_from_linkedlist(username, &usernames);
+   pthread_mutex_unlock(&usernames.mutex);
+   return ret;
+ }
+
+ void handle_client_name_taken(int client_fd){
+   char name_taken[] = "Name already taken\n";
+   write(client_fd, name_taken, strlen(name_taken));
+   close(client_fd);
+   //remove_node_client_fd(node_client_fd);
  }
 
  void store_local_log(struct linkedlist* local_log, client_info* info, char* name){
@@ -362,8 +372,8 @@ struct node* append_node_client_fd(int* client_fd){
 
 void remove_node_client_fd(struct node* client_fd){
   pthread_mutex_lock(&client_fd_linkedlist.mutex);
-  if(remove_node_from_linkedlist(client_fd, &client_fd_linkedlist)!=0)//error occured
-    perror("Error while appending node to linkedlist");
+  remove_node_from_linkedlist(client_fd, &client_fd_linkedlist);//error occured
+    //perror("Error while removing node to linkedlist");
   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
 }
 
