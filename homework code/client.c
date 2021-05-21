@@ -24,7 +24,7 @@ void get_time(char* buffer){
   snprintf(buffer, BUFFER_DATE_SIZE, "%d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
-char* str_trim_nl (char* arr, int length) {
+char* str_trim(char* arr, int length) {
   int i;
   for (i = length-1; i >= 0; i--)  // trim \n
     if (arr[i] == '\n')
@@ -57,7 +57,7 @@ static void* listen_message(int* fd){
     int n = read(sockfd, buffer, BUFFER_SIZE_MESSAGE);
     if (n <= 0)
          error("ERROR reading from socket", sockfd);
-    printf("%s\n", str_trim_nl(buffer, n));
+    printf("%s\n", str_trim(buffer, n));
     print_n_flush();
   }
 }
@@ -72,11 +72,11 @@ static void send_hello(int sockfd, const char* name){
   strcat(new_name, name);
 
   for(int i = strlen(new_name); i>=0; i--)
-    if(new_name[i] == ':') {
-        new_name[i] = ' ';
-        break;
-      }
-
+    if(new_name[i] == ':')
+    {
+      new_name[i] = ' ';
+      break;
+    }
   get_time(time);
   wrap_message(buff_out, time, new_name, "");
 
@@ -121,7 +121,7 @@ static void send_message(void* usr_info){
 
 int main(int argc, char *argv[])
 {
-    int sockfd, portno, n;
+    int sockfd, portno;
     struct sockaddr_in serv_addr;
     struct hostent *server;
     pthread_t tid;

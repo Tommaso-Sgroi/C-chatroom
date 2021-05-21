@@ -5,7 +5,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
-//#include "datastructure/linkedlist.c"
 
 int setup_server(struct sockaddr_in* serv_addr, int port);
 int run_producers(int port);
@@ -28,6 +27,7 @@ int check_username_already_taken(char*);
 void handle_client_name_taken(int client_fd);
 void handle_client_accept(struct node* username, char* name, struct node* node_client_fd, int* client_fd, struct linkedlist* local_log);
 int remove_node_username(struct node* username);
+int check_peer(int client_fd, char* addr_sender);
 
 typedef struct{
   char* message;
@@ -68,11 +68,4 @@ client_info* new_client_info(struct sockaddr_in * addr, int cli_fd){
   info->cli_addr = inet_ntoa(addr->sin_addr);
   info->cli_fd = cli_fd;
   return info;
-}
-
-int check_peer(int client_fd, char* addr_sender){
-  struct sockaddr_in addr;
-  socklen_t addr_size = sizeof(struct sockaddr_in);
-  getpeername(client_fd, (struct sockaddr *)&addr, &addr_size);
-  return strcmp(inet_ntoa(addr.sin_addr), addr_sender); //cmp ip strings
 }

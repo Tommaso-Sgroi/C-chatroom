@@ -42,7 +42,9 @@ struct {
 } global_log;
 
 
-
+/*
+-----------------------------MAIN---------------------------------------
+*/
 int main(int argc, char *argv[]) {
   setup();
   pthread_t tid;
@@ -56,7 +58,49 @@ int main(int argc, char *argv[]) {
   run_producers(/*atoi(argv[1])*/4444);
 }
 
-//------------------------RUN------------------------------------------
+
+ /*
+   -----------------------------SETUP---------------------------------------
+ */
+
+  int setup_server(struct sockaddr_in* serv_addr, int port){
+    serv_addr->sin_family = AF_INET;
+    serv_addr->sin_addr.s_addr = INADDR_ANY;
+    serv_addr->sin_port = htons(port);
+    return 0;
+  }
+
+  void setup(){
+    make_linkedlist();
+    setup_mutex();
+    setup_cond();
+  }
+
+  void setup_cond() {
+    if (pthread_cond_init(&global_log.new_message, NULL) != 0) {
+        perror("Error in pthread_cond_init()\n");
+        exit(EXIT_FAILURE);
+    }
+  }
+
+  void setup_mutex(){
+
+    if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0 || pthread_mutex_init(&global_log.global_log->mutex, NULL) != 0)
+    {
+      fprintf(stderr, "Error in pthread_mutex_init()\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  void make_linkedlist(){
+    client_fd_linkedlist = *new_linkedlist(NULL);//void linked_list
+    global_log.global_log = new_linkedlist(NULL);//void global_log
+  }
+
+/*
+-----------------------------RUN---------------------------------------
+-----------------------------PRODUCERS---------------------------------------
+*/
  int run_producers(int port){
    //declare variables
    int sockfd, client_fd;
@@ -130,10 +174,8 @@ int main(int argc, char *argv[]) {
      }
      append_string_global_log(buffer, byte_read, client_fd, addr);//GLOBAL LOG
      append_string_local_log(local_log, buffer, byte_read); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
-
-     // n = write(sock,"I got your message",18);
-     // if (n < 0) error("ERROR writing to socket");
    }
+
    close(client_fd);
    remove_node_client_fd(node_client_fd);
    remove_node_username(username_node);
@@ -144,239 +186,7 @@ int main(int argc, char *argv[]) {
    return 0;
  }
 
- int remove_node_username(struct node* username){
-   pthread_mutex_lock(&usernames.mutex);
-   int ret = remove_node_from_linkedlist(username, &usernames);
-   pthread_mutex_unlock(&usernames.mutex);
-   return ret;
- }
-
- void handle_client_name_taken(int client_fd){
-   char name_taken[] = "Name already taken\n";
-   write(client_fd, name_taken, strlen(name_taken));
-   close(client_fd);
-   //remove_node_client_fd(node_client_fd);
- }
-
- void store_local_log(struct linkedlist* local_log, client_info* info, char* name){
-    DIR* dir = opendir("logs");
-    if (dir)
-    {
-      closedir(dir);
-      /* Directory exists. */
-      char path_prefix [] = "./logs/";
-      char path_suffix[] = ".txt";
-      int len_path = strlen(path_prefix) + strlen(name)-1 + strlen(path_suffix);
-      char path [len_path];
-      memset(path, 0, len_path);
-      char real_name[strlen(name)-1];
-      strncat(real_name, name, strlen(name)-1);
-      strncat(path, path_prefix, strlen(path_prefix));
-      strncat(path, real_name, strlen(real_name));
-      strncat(path, path_suffix, strlen(path_suffix));
-      int fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0666);
-      if(fd < 0)
-      {
-        perror("Error while opening logs: ");
-        return;
-      }
-      int byte_w = write(fd, info->cli_addr, strlen(info->cli_addr));
-      if(byte_w < 0)
-      {
-        perror("Error while writing logs: ");
-        return;
-      }
-      byte_w = write(fd, "\n", 1);
-      if(byte_w < 0)
-      {
-        perror("Error while writing logs: ");
-        return;
-      }
-
-      struct node* actual_node = local_log->first;
-      while(actual_node)
-      {
-        char* message = (char*)actual_node->value;
-        byte_w = write(fd, message, strlen(message));
-        if(byte_w < 0) perror("Error while writing logs: ");
-        free(message);
-        actual_node = actual_node->next;
-      }
-      close(fd);
-
-      while (local_log->first)
-        remove_node_from_linkedlist(local_log->first, local_log);
-      //free(local_log);
-    }
-    else if (ENOENT == errno)
-    {
-        /* Directory does not exist. */
-        int r = mkdir("logs", 0777);
-        if(r < 0) perror("Cannot create /log dir");
-        else store_local_log(local_log, info, name); //se tutto va a buon fine allora richiama te stessa così che può ripetere tutti i passaggi correttamente
-    }
-    else
-    {
-      /* opendir() failed for some other reason. */
-        perror("Cannot open /log dir");
-    }
- }
-
- void send_goodbye(char* buffer, char* name, struct linkedlist* local_log){
-
-   memset(buffer, 0, BUFFER_SIZE_MESSAGE);
-   time_t t = time(NULL);
-   struct tm tm = *localtime(&t);
-   snprintf(buffer, BUFFER_SIZE_MESSAGE, "%d-%d-%d %d:%d:%d\n%s%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,"HAS LEFT THE CHATROOM-->", name);
-   append_string_global_log(buffer, strlen(buffer), -1, null_addr);//GLOBAL LOG
-   append_string_local_log(local_log, buffer, strlen(buffer));
- }
-
-
- void get_username(char*message, char* name){
-   int flag;
-   unsigned long int len = strlen(message);
-   for(unsigned long int i = 0; i<len; i++)
-   {
-     if(message[i]=='>')//has joined -->
-     {
-        while (message[++i] != '\n')
-         name[flag++] = message[i];
-       break;
-     }
-   }
- }
-
- int check_username_already_taken(char* name){
-   struct node* actual_node = usernames.first;
-   while(actual_node)
-   {
-     if(strcmp(name, (char*)actual_node->value) == 0)
-      return 1;
-     actual_node = actual_node->next;
-   }
-   return 0;
- }
-
-int run_consumer(void* null) {
-
-  global_log.last_read = global_log.global_log->first;//redundant?
-  int fd = open("logs/global_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0666);
-  if(fd < 0) {
-    perror("Error while opening global log: ");
-  }
-  while (1)
-  {
-    pthread_mutex_lock(&global_log.global_log->mutex);
-    pthread_cond_wait(&global_log.new_message, &global_log.global_log->mutex);
-
-    if(global_log.last_read == NULL)//empty linkedlist
-      global_log.last_read = global_log.global_log->first;
-    else global_log.last_read = global_log.last_read->next;
-
-    while(1)//itero sulla linked list dei log
-    {
-      //itero sui client_fd
-      pthread_mutex_lock(&client_fd_linkedlist.mutex);
-
-      struct node* actual_client_fd_node = client_fd_linkedlist.first;
-      sender_msg* sender = (sender_msg*)global_log.last_read->value;
-
-      while(actual_client_fd_node)
-      {
-        if(*(int*)actual_client_fd_node->value != sender->sockfd || check_peer(sender->sockfd, sender->addr) != 0) //if false the message has been send by same user so discard
-          {
-            write(*(int*)actual_client_fd_node->value, sender->message, BUFFER_SIZE_MESSAGE); //we can ingore errors on write because
-          }
-        actual_client_fd_node = actual_client_fd_node->next;
-      }//fine iterazione sui client_fd
-      store_global_log(sender->message, fd);
-      pthread_mutex_unlock(&client_fd_linkedlist.mutex);
-      if(global_log.last_read->next)
-        global_log.last_read = global_log.last_read->next; //aggiorno l'ultimo messaggio
-      else break;
-    }
-    //printf("Ultimo messaggio: %s\n", ((sender_msg*)global_log.last_read->value)->message);
-
-    pthread_mutex_unlock(&global_log.global_log->mutex);
-  }
-  return 0;
-}
-
-void store_global_log(char* msg, int fd){
-    int byte_w = write(fd, msg, strlen(msg));
-    if(byte_w < 0)
-      perror("Error while writing logs: ");
-}
-
-
- /*
-   SERVER STUFF
- */
-
-  int setup_server(struct sockaddr_in* serv_addr, int port){
-    serv_addr->sin_family = AF_INET;
-    serv_addr->sin_addr.s_addr = INADDR_ANY;
-    serv_addr->sin_port = htons(port);
-    return 0;
-  }
-
-  void setup(){
-    make_linkedlist();
-    setup_mutex();
-    setup_cond();
-  }
-
-  void setup_cond() {
-    if (pthread_cond_init(&global_log.new_message, NULL) != 0) {
-        perror("Error in pthread_cond_init()\n");
-        exit(EXIT_FAILURE);
-    }
-  }
-
-  void setup_mutex(){
-
-    if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0 || pthread_mutex_init(&global_log.global_log->mutex, NULL) != 0)
-    {
-      fprintf(stderr, "Error in pthread_mutex_init()\n");
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  void make_linkedlist(){
-    client_fd_linkedlist = *new_linkedlist(NULL);//void linked_list
-    global_log.global_log = new_linkedlist(NULL);//void global_log
-  }
-
-
-
-/*
-THREAD CREATE
-*/
-
-
-
-
-
-struct node* append_node_client_fd(int* client_fd){
-  struct node* node = new_node((void*)client_fd);
-
-  pthread_mutex_lock(&client_fd_linkedlist.mutex);
-
-  if(append_node(&client_fd_linkedlist, node)!=0)//error occured
-    perror("Error while appending node to linkedlist");
-
-  pthread_mutex_unlock(&client_fd_linkedlist.mutex);
-  return node;
-}
-
-void remove_node_client_fd(struct node* client_fd){
-  pthread_mutex_lock(&client_fd_linkedlist.mutex);
-  remove_node_from_linkedlist(client_fd, &client_fd_linkedlist);//error occured
-    //perror("Error while removing node to linkedlist");
-  pthread_mutex_unlock(&client_fd_linkedlist.mutex);
-}
-
+//---------------------------COMUNICATION BETWEN PRODUCERS-CONSUMER-------------------
 void append_string_global_log(char*string, int len, int client_fd, char* addr){
   pthread_mutex_lock(&global_log.global_log->mutex);
 
@@ -410,25 +220,193 @@ void append_string_local_log(struct linkedlist* linkedlist, char*string, int len
   append_node(linkedlist, node);
 }
 
-// void parse_timestamp(char* buffer, struct tm* parsedTime){
-//   int year, month, day, hours, min, sec;
-//   // ex: 2009-10-29
-//   if(sscanf(buffer, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hours,  &min, &sec) != EOF)
-//   {
-//     time_t rawTime;
-//     time(&rawTime);
-//     parsedTime = localtime(&rawTime);
-//
-//     // tm_year is years since 1900
-//     parsedTime->tm_year = year - 1900;
-//     // tm_months is months since january
-//     parsedTime->tm_mon = month - 1;
-//     parsedTime->tm_mday = day;
-//     parsedTime->tm_hour = hours;
-//     parsedTime->tm_min = min;
-//     parsedTime->tm_sec = sec;
-//   }
-// }
+//------------------------CLIENT LOG-IN------------------------------------
+
+/*
+Parse username from hello message
+*/
+ void get_username(char*message, char* name){
+   int flag;
+   unsigned long int len = strlen(message);
+   for(unsigned long int i = 0; i<len; i++)
+     if(message[i]=='>')//has joined -->
+     {
+        while (message[++i] != '\n')
+         name[flag++] = message[i];
+       break;
+     }
+ }
+
+ int check_username_already_taken(char* name){
+   struct node* actual_node = usernames.first;
+   while(actual_node)
+     if(strcmp(name, (char*)actual_node->value) == 0)
+      return 1;
+     else actual_node = actual_node->next;
+   return 0;
+ }
+
+ void handle_client_name_taken(int client_fd){
+   char name_taken[] = "Name already taken\n";
+   write(client_fd, name_taken, strlen(name_taken));
+   close(client_fd);
+ }
+
+ struct node* append_node_client_fd(int* client_fd){
+   struct node* node = new_node((void*)client_fd);
+
+   pthread_mutex_lock(&client_fd_linkedlist.mutex);
+   if(append_node(&client_fd_linkedlist, node)!=0)//error occured
+     perror("Error while appending node to linkedlist");
+
+   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
+   return node;
+ }
+
+//--------------------USER DISCONNECTED---------------------------------------
+ int remove_node_username(struct node* username){
+   pthread_mutex_lock(&usernames.mutex);
+   int ret = remove_node_from_linkedlist(username, &usernames);
+   pthread_mutex_unlock(&usernames.mutex);
+   return ret;
+ }
+
+ void remove_node_client_fd(struct node* client_fd){
+   pthread_mutex_lock(&client_fd_linkedlist.mutex);
+   remove_node_from_linkedlist(client_fd, &client_fd_linkedlist);//error occured
+   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
+ }
+
+ void send_goodbye(char* buffer, char* name, struct linkedlist* local_log){
+   memset(buffer, 0, BUFFER_SIZE_MESSAGE);
+   time_t t = time(NULL);
+   struct tm tm = *localtime(&t);
+   snprintf(buffer, BUFFER_SIZE_MESSAGE, "%d-%d-%d %d:%d:%d\n%s%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,"HAS LEFT THE CHATROOM-->", name);
+
+   append_string_global_log(buffer, strlen(buffer), -1, null_addr);//GLOBAL LOG
+   append_string_local_log(local_log, buffer, strlen(buffer));
+ }
+
+ void store_local_log(struct linkedlist* local_log, client_info* info, char* name){
+    DIR* dir = opendir("logs");
+    if (dir)
+    {
+      closedir(dir);
+      /* Directory exists. */
+      char path_prefix [] = "./logs/";
+      char path_suffix[] = ".txt";
+      int len_path = strlen(path_prefix) + strlen(name)-1 + strlen(path_suffix);
+      char path [len_path];
+
+      memset(path, 0, len_path);
+      char real_name[strlen(name)-1];
+
+      strncat(real_name, name, strlen(name)-1);
+      strncat(path, path_prefix, strlen(path_prefix));
+      strncat(path, real_name, strlen(real_name));
+      strncat(path, path_suffix, strlen(path_suffix));
+
+      int fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0666);
+      if(fd < 0)
+      {
+        perror("Error while opening logs: ");
+        return;
+      }
+      int byte_w = write(fd, info->cli_addr, strlen(info->cli_addr));
+      if(byte_w < 0)
+      {
+        perror("Error while writing logs: ");
+        return;
+      }
+      byte_w = write(fd, "\n", 1);
+      if(byte_w < 0)
+      {
+        perror("Error while writing logs: ");
+        return;
+      }
+
+      struct node* actual_node = local_log->first;
+      while(actual_node)
+      {
+        char* message = (char*)actual_node->value;
+        byte_w = write(fd, message, strlen(message));
+
+        if(byte_w < 0) perror("Error while writing logs: ");
+
+        free(message);
+        actual_node = actual_node->next;
+      }
+      close(fd);
+
+      while(local_log->first)
+        remove_node_from_linkedlist(local_log->first, local_log);
+      //free(local_log);
+    }
+    else if(ENOENT == errno)
+    {
+        /* Directory does not exist. */
+        int r = mkdir("logs", 0777);
+        if(r < 0) perror("Cannot create /log dir");
+        else store_local_log(local_log, info, name); //se tutto va a buon fine allora richiama te stessa così che può ripetere tutti i passaggi correttamente
+    }
+    else
+    {
+      /* opendir() failed for some other reason. */
+        perror("Cannot open /log dir");
+    }
+ }
+
+ /*
+  -------------------------------------RUN CONSUMER-------------------------------------
+ */
+
+int run_consumer(void* null) {
+
+  int fd = open("logs/global_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0666);
+  if(fd < 0)
+    perror("Error while opening global log: ");
+  while (1)
+  {
+    pthread_mutex_lock(&global_log.global_log->mutex);
+    pthread_cond_wait(&global_log.new_message, &global_log.global_log->mutex);
+
+    if(global_log.last_read == NULL)//empty linkedlist
+      global_log.last_read = global_log.global_log->first;
+    else global_log.last_read = global_log.last_read->next;
+
+    while(1)//itero sulla linked list dei log
+    {
+      //itero sui client_fd
+      pthread_mutex_lock(&client_fd_linkedlist.mutex);
+
+      struct node* actual_client_fd_node = client_fd_linkedlist.first;
+      sender_msg* sender = (sender_msg*)global_log.last_read->value;
+
+      while(actual_client_fd_node)
+      {
+        if(*(int*)actual_client_fd_node->value != sender->sockfd || check_peer(sender->sockfd, sender->addr) != 0) //if false the message has been send by same user so discard
+            write(*(int*)actual_client_fd_node->value, sender->message, BUFFER_SIZE_MESSAGE); //we can ingore errors on write because the producer associated will handle it
+        actual_client_fd_node = actual_client_fd_node->next;
+      }//fine iterazione sui client_fd
+      store_global_log(sender->message, fd);
+      pthread_mutex_unlock(&client_fd_linkedlist.mutex);
+      if(global_log.last_read->next)
+        global_log.last_read = global_log.last_read->next; //aggiorno l'ultimo messaggio
+      else break;
+    }
+    //printf("Ultimo messaggio: %s\n", ((sender_msg*)global_log.last_read->value)->message);
+
+    pthread_mutex_unlock(&global_log.global_log->mutex);
+  }
+  return 0;
+}
+
+void store_global_log(char* msg, int fd){
+    int byte_w = write(fd, msg, strlen(msg));
+    if(byte_w < 0)
+      perror("Error while writing logs: ");
+}
+
 
 struct node* check_youngest_msg(struct node* node, struct node* other){
   if(node == NULL || other == NULL || node == other) return NULL;
@@ -458,86 +436,9 @@ struct node* check_youngest_msg(struct node* node, struct node* other){
   return append_before;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//
+int check_peer(int client_fd, char* addr_sender){
+  struct sockaddr_in addr;
+  socklen_t addr_size = sizeof(struct sockaddr_in);
+  getpeername(client_fd, (struct sockaddr *)&addr, &addr_size);
+  return strcmp(inet_ntoa(addr.sin_addr), addr_sender); //cmp ip strings
+}
