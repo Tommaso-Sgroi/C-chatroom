@@ -31,19 +31,16 @@
 //     int exitno = 1;
 //     pthread_exit(&exitno);
 // }
-//PER INTERCETTARE I SIGNAL
-// void intHandler(int dummy) {
-//     printf("\n%d\n", dummy);
-//
-// }
+
 char null_addr []= " ";
-struct linkedlist client_fd_linkedlist;
+struct linkedlist client_fd_linkedlist, usernames;
 
 struct {
   struct linkedlist* global_log;
   struct node* last_read;
   pthread_cond_t new_message;
 } global_log;
+
 
 
 int main(int argc, char *argv[]) {
@@ -97,8 +94,9 @@ int main(int argc, char *argv[]) {
    int client_fd = client_info_->cli_fd;
    char* addr = client_info_->cli_addr;
 
-   struct linkedlist* local_log = new_linkedlist(NULL);//si può modificare mettendo all'inizio un nodo con l'indirizzo+nome
-   struct node* node_client_fd = append_node_client_fd(&client_fd);
+   struct linkedlist* local_log;// = new_linkedlist(NULL);//si può modificare mettendo all'inizio un nodo con l'indirizzo+nome
+   struct node* node_client_fd;
+   struct node* username_node;
 
    int byte_read, get_name;
    char name[BUFFER_NAME_SIZE-1];
@@ -111,12 +109,32 @@ int main(int argc, char *argv[]) {
      if (byte_read <= 0) break; //user disconnected
      if(get_name == 0)
      {
+       // pthread_mutex_lock(&usernames.mutex);
        get_username(buffer, name);
+       int write_b;
+       pthread_mutex_lock(&usernames.mutex);
+       if(check_username_already_taken(name))
+       {
+         char* name_taken = "Name already taken\n";
+         write_b = write(client_fd, name_taken, strlen(name_taken));
+         close(client_fd);
+         //remove_node_client_fd(node_client_fd);
+         pthread_mutex_unlock(&usernames.mutex);
+         return 1;
+       }
+       else //TODO VA SISTEMATO  UN ATTIMO
+       {
+         struct node* username = new_node(name);
+         append_node(&usernames, username); //INTO FUNTION
+         pthread_mutex_unlock(&usernames.mutex);
+         node_client_fd = append_node_client_fd(&client_fd);
+         local_log = new_linkedlist(NULL);
+       }
        printf("%s\n%s\n", buffer, name);
        get_name++;
      }
-     char* log = append_string_log(buffer, byte_read, client_fd, addr);//GLOBAL LOG
-     append_node(local_log, new_node(log)); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
+     append_string_global_log(buffer, byte_read, client_fd, addr);//GLOBAL LOG
+     append_string_local_log(local_log, buffer, byte_read); //LOCAL LOG, apppend new node that share the same string with global log to decrease the amount of heap used
 
      // n = write(sock,"I got your message",18);
      // if (n < 0) error("ERROR writing to socket");
@@ -171,10 +189,14 @@ int main(int argc, char *argv[]) {
         char* message = (char*)actual_node->value;
         byte_w = write(fd, message, strlen(message));
         if(byte_w < 0) perror("Error while writing logs: ");
-
+        free(message);
         actual_node = actual_node->next;
       }
       close(fd);
+
+      while (local_log->first)
+        remove_node_from_linkedlist(local_log->first, local_log);
+      //free(local_log);
     }
     else if (ENOENT == errno)
     {
@@ -196,8 +218,8 @@ int main(int argc, char *argv[]) {
    time_t t = time(NULL);
    struct tm tm = *localtime(&t);
    snprintf(buffer, BUFFER_SIZE_MESSAGE, "%d-%d-%d %d:%d:%d\n%s%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,"HAS LEFT THE CHATROOM-->", name);
-   char* log = append_string_log(buffer, strlen(buffer), -1, null_addr);//GLOBAL LOG
-   append_node(local_log, new_node(log));
+   append_string_global_log(buffer, strlen(buffer), -1, null_addr);//GLOBAL LOG
+   append_string_local_log(local_log, buffer, strlen(buffer));
  }
 
 
@@ -215,9 +237,24 @@ int main(int argc, char *argv[]) {
    }
  }
 
+ int check_username_already_taken(char* name){
+   struct node* actual_node = usernames.first;
+   while(actual_node)
+   {
+     if(strcmp(name, (char*)actual_node->value) == 0)
+      return 1;
+     actual_node = actual_node->next;
+   }
+   return 0;
+ }
+
 int run_consumer(void* null) {
 
   global_log.last_read = global_log.global_log->first;//redundant?
+  int fd = open("logs/global_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0666);
+  if(fd < 0) {
+    perror("Error while opening global log: ");
+  }
   while (1)
   {
     pthread_mutex_lock(&global_log.global_log->mutex);
@@ -238,10 +275,12 @@ int run_consumer(void* null) {
       while(actual_client_fd_node)
       {
         if(*(int*)actual_client_fd_node->value != sender->sockfd || check_peer(sender->sockfd, sender->addr) != 0) //if false the message has been send by same user so discard
-          write(*(int*)actual_client_fd_node->value, sender->message, BUFFER_SIZE_MESSAGE); //we can ingore errors on write because
-                                                                                            //the thread associated to this fd will close it self the connection
+          {
+            write(*(int*)actual_client_fd_node->value, sender->message, BUFFER_SIZE_MESSAGE); //we can ingore errors on write because
+          }
         actual_client_fd_node = actual_client_fd_node->next;
       }//fine iterazione sui client_fd
+      store_global_log(sender->message, fd);
       pthread_mutex_unlock(&client_fd_linkedlist.mutex);
       if(global_log.last_read->next)
         global_log.last_read = global_log.last_read->next; //aggiorno l'ultimo messaggio
@@ -254,6 +293,11 @@ int run_consumer(void* null) {
   return 0;
 }
 
+void store_global_log(char* msg, int fd){
+    int byte_w = write(fd, msg, strlen(msg));
+    if(byte_w < 0)
+      perror("Error while writing logs: ");
+}
 
 
  /*
@@ -323,7 +367,7 @@ void remove_node_client_fd(struct node* client_fd){
   pthread_mutex_unlock(&client_fd_linkedlist.mutex);
 }
 
-char* append_string_log(char*string, int len, int client_fd, char* addr){
+void append_string_global_log(char*string, int len, int client_fd, char* addr){
   pthread_mutex_lock(&global_log.global_log->mutex);
 
   char* buffer= (char*)calloc(len, sizeof(char)); //allocate in heap the message (so is not lost at the end of function)
@@ -346,7 +390,14 @@ char* append_string_log(char*string, int len, int client_fd, char* addr){
   //signal the consumer and release lock
   pthread_cond_signal(&global_log.new_message);
   pthread_mutex_unlock(&global_log.global_log->mutex);
-  return buffer; //return the heap buffer pointer
+  //return buffer; //return the heap buffer pointer
+}
+
+void append_string_local_log(struct linkedlist* linkedlist, char*string, int len){
+  char* buffer= (char*)calloc(len, sizeof(char)); //allocate in heap the message (so is not lost at the end of function)
+  buffer = strncpy(buffer, string, len);
+  struct node* node = new_node(buffer);//new message node
+  append_node(linkedlist, node);
 }
 
 // void parse_timestamp(char* buffer, struct tm* parsedTime){

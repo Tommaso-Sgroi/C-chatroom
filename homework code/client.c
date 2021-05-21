@@ -41,6 +41,7 @@ void print_n_flush(){
 }
 
 char* wrap_message(char* buffer, char* timestamp, const char* name, char* message){
+  //strcat(buffer, "\r");
   strcat(buffer, timestamp);
   strcat(buffer, name);
   strcat(buffer, message);

@@ -48,6 +48,7 @@ int remove_node(struct node* first, struct node* node_to_remove){
         //save prev and next
         struct node* prev = first->prev;
         struct node* next = first->next;
+
         //free(first->value);//could be allocated in heap
         free(first);//deallocate space
         //link prev and next
@@ -134,7 +135,7 @@ int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_lis
     {
       linked_list->first = node->next != NULL? node->next: NULL;
       linked_list->lenght--;
-      free(node);
+      //remove_node(node, node);
     }
   else if(remove_node(linked_list->first, node))
       linked_list->lenght--;

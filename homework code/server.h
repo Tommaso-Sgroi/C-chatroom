@@ -15,12 +15,15 @@ void setup_cond();
 int handle_client(void* client_info);
 struct node* append_node_client_fd(int* client_fd);
 void remove_node_client_fd(struct node* client_fd);
-char* append_string_log(/*struct linkedlist* linkedlist, */char*string, int len, int client_fd, char* addr);
+void append_string_global_log(/*struct linkedlist* linkedlist, */char*string, int len, int client_fd, char* addr);
+void append_string_local_log(struct linkedlist* linkedlist, char*string, int len);
 void setup();
 void parse_timestamp(char* buffer, struct tm* parsedTime);
 struct node* check_youngest_msg(struct node* node, struct node* other);
 void get_username(char*message, char* name);
 void send_goodbye(char* buffer, char* name, struct linkedlist* local_log);
+void store_global_log(char* msg, int fds);
+int check_username_already_taken(char*);
 
 
 typedef struct{

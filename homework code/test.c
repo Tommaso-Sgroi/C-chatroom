@@ -41,31 +41,31 @@ struct node* check_youngest_msg(struct node* node, struct node* other){
 }
 int main(){
 
-	char dateString1[] = "4000-12-10 10:04:54 ajbdkasbdfkjnbfkjsdfkjndkjfn mkmfsm lkfmalkdfm askfm kma";
-	char dateString2[] = "2020-01-01 00:00:00 mkmfsm lkfmalkdfm askfm kma";
-
-	//printf("%s\n", buffer);
-	sender_msg* msg1 = new_sender_msg(dateString1, -1, "addr1");
-	sender_msg* msg2 = new_sender_msg(dateString2, -1, "addr2");
-
-	struct linkedlist* linked = new_linkedlist(NULL);
-
-	struct node* node1 = new_node((void*)msg1);//da inserire
-	struct node* node2 = new_node((void*)msg2);
-
-	append_node(linked, node2);
-
-	struct node* append_before = check_youngest_msg(node1, node2);
-	printf("Append before of %s\n", append_before == NULL? "NULL": ((sender_msg*)append_before->value)->message);
-	struct node* tmp = insert_first(append_before, node1);
-	if(linked->lenght == 1 && tmp)
-	{
-		linked->first = tmp;
-	}
-	else if(tmp == NULL)
-	{
-		append_node(linked, node1);
-	}
+	// char dateString1[] = "4000-12-10 10:04:54 ajbdkasbdfkjnbfkjsdfkjndkjfn mkmfsm lkfmalkdfm askfm kma";
+	// char dateString2[] = "2020-01-01 00:00:00 mkmfsm lkfmalkdfm askfm kma";
+	//
+	// //printf("%s\n", buffer);
+	// sender_msg* msg1 = new_sender_msg(dateString1, -1, "addr1");
+	// sender_msg* msg2 = new_sender_msg(dateString2, -1, "addr2");
+	//
+	// struct linkedlist* linked = new_linkedlist(NULL);
+	//
+	// struct node* node1 = new_node((void*)msg1);//da inserire
+	// struct node* node2 = new_node((void*)msg2);
+	//
+	// append_node(linked, node2);
+	//
+	// struct node* append_before = check_youngest_msg(node1, node2);
+	// printf("Append before of %s\n", append_before == NULL? "NULL": ((sender_msg*)append_before->value)->message);
+	// struct node* tmp = insert_first(append_before, node1);
+	// if(linked->lenght == 1 && tmp)
+	// {
+	// 	linked->first = tmp;
+	// }
+	// else if(tmp == NULL)
+	// {
+	// 	append_node(linked, node1);
+	// }
 
 	// char path_prefix [] = "./logs/";
 	// char path_suffix[] = ".txt";
@@ -78,13 +78,25 @@ int main(){
 	// printf("%s\n", path);
 
 
-	printf("Message Appended %s\n", tmp == NULL? "NULL": ((sender_msg*)tmp->value)->message);
-	struct node* actual_node = linked->first;
-	while(actual_node)
-	{
-		printf("%s\n", ((sender_msg*)actual_node->value)->message);
-		actual_node = actual_node->next;
-	}
+	// printf("Message Appended %s\n", tmp == NULL? "NULL": ((sender_msg*)tmp->value)->message);
+	// struct node* actual_node = linked->first;
+	// while(actual_node)
+	// {
+	// 	printf("%s\n", ((sender_msg*)actual_node->value)->message);
+	// 	actual_node = actual_node->next;
+	// }
+//  char b [3];
+	//scanf(" %3s", b);
+	//printf("%s\n", b);
+	//while ((getchar()) != '\n');
+	//fflush(stdin);
+	// scanf(" %3s", b);
+	// printf("%s\n", b);
+
+
+
+	//printf("%d\n", sizeof(char));
+
 	return 0;
 
 }
