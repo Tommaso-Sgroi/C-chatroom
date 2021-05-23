@@ -1,27 +1,15 @@
-/* A simple server in the internet domain using TCP
-   The port number is passed as an argument
-   This version runs forever, forking off a separate
-   process for each connection
-*/
-#include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <netinet/in.h>
 #include <fcntl.h>
 #include <signal.h>//TO REMOVE?
 #include <pthread.h>
 #include <signal.h>
-#include <string.h>
 #include <time.h>
 #include <dirent.h>
 #include <errno.h>
 #include "datastructure/linkedlist.c"
-#include "server.h"
-#include "size.h"
+#include "server_/server.h"
+#include "datastructure/size.h"
 
 #define MAX_CLIENT_QUEUE_REQUEST 16
 
@@ -41,6 +29,15 @@ struct {
   pthread_cond_t new_message;
 } global_log;
 
+void catch_ctrl_c_and_exit(int sig) {
+  struct node *clifd = client_fd_linkedlist.first;
+  while (clifd)
+  {
+      close(*(int*)clifd->value); // close all socket include server_sockfd
+      clifd = clifd->next;
+  }
+  exit(EXIT_SUCCESS);
+}
 
 /*
 -----------------------------MAIN---------------------------------------
@@ -431,8 +428,10 @@ struct node* check_youngest_msg(struct node* node, struct node* other){
 			append_before = actual_node;
     else if(sender_ts.min == reciver_ts.min && sender_ts.sec < reciver_ts.sec) //if sender < reciver
 			append_before = actual_node;
+    free(&reciver_ts);
     actual_node = actual_node->next;
   }
+  free(&sender_ts);
   return append_before;
 }
 

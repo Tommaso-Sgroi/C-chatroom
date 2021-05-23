@@ -1,14 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <pthread.h>
-#include "size.h"
-#include "client.h"
+#include "datastructure/size.h"
+#include "client_/time/timestamp.h"
+#include "client_/struct/client_struct.h"
+#include "client_/client_utility.h"
 
 void error(const char *msg, int sockfd)
 {
@@ -17,36 +16,10 @@ void error(const char *msg, int sockfd)
     exit(0);
 }
 
-void get_time(char* buffer){
-  memset(buffer, 0,BUFFER_DATE_SIZE);
-	time_t t = time(NULL);
-	struct tm tm = *localtime(&t);
-  snprintf(buffer, BUFFER_DATE_SIZE, "%d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-}
 
-char* str_trim(char* arr, int length) {
-  int i;
-  for (i = length-1; i >= 0; i--)  // trim \n
-    if (arr[i] == '\n')
-    {
-      arr[i] = '\0';
-      break;
-    }
-  return arr;
-}
-
-void print_n_flush(){
-  printf(">>>");
-  fflush(stdout);
-}
-
-char* wrap_message(char* buffer, char* timestamp, const char* name, char* message){
-  //strcat(buffer, "\r");
-  strcat(buffer, timestamp);
-  strcat(buffer, name);
-  strcat(buffer, message);
-  return buffer;
-}
+/*
+-----------------------------LISTEN MESSAGES THREAD----------------------------------
+*/
 
 static void* listen_message(int* fd){
   int sockfd = *fd;
@@ -62,6 +35,10 @@ static void* listen_message(int* fd){
   }
 }
 
+/*
+---------------------------SEND MESSAGES THREAD--------------------------------------
+*/
+
 static void send_hello(int sockfd, const char* name){
   char has_joined[]= "JOINED-->";
   char buff_out[strlen(name) + BUFFER_DATE_SIZE + strlen(has_joined)];
@@ -72,18 +49,18 @@ static void send_hello(int sockfd, const char* name){
   strcat(new_name, name);
 
   for(int i = strlen(new_name); i>=0; i--)
-    if(new_name[i] == ':')
-    {
+    if(new_name[i] == ':') {
       new_name[i] = ' ';
       break;
     }
-  get_time(time);
   wrap_message(buff_out, time, new_name, "");
 
   int bye_write = write(sockfd, buff_out, strlen(buff_out));
   if (bye_write < 0)
        error("ERROR writing to socket", sockfd);
 }
+
+
 
 static void send_message(void* usr_info){
   struct user_info* usr = (struct user_info*)usr_info;
@@ -105,7 +82,7 @@ static void send_message(void* usr_info){
     if(strlen(message)>1)//if is not void
     {
       char timestamp[BUFFER_DATE_SIZE];
-      get_time(timestamp);
+      get_timestamp(timestamp);
 
       char* message_wrapped = wrap_message(buffer, timestamp, name, message);
       int bye_write = write(sockfd, message_wrapped, strlen(message_wrapped));
@@ -118,22 +95,17 @@ static void send_message(void* usr_info){
 
 
 
-
-int main(int argc, char *argv[])
-{
+/*
+---------------MAIN-------------------------------------
+*/
+int main(int argc, char *argv[]){
     int sockfd, portno;
     struct sockaddr_in serv_addr;
     struct hostent *server;
     pthread_t tid;
 
-    char name[BUFFER_NAME_SIZE+2]; //bisogna fare scanf con \n
-    printf("%s", "INSERT NAME:\n");
-    do
-    {
-      printf("Name must be higher than 0 and less than %d chars\n", BUFFER_NAME_SIZE-1);
-      scanf(" %s", name);
-    } while (strlen(name)>BUFFER_NAME_SIZE-1 && strlen(name)>0);
-    strcat(name, ":\n");
+    char name[BUFFER_NAME_SIZE+2]; //bisogna fare scanf con ":\n"
+    ask_name(name);
     // if (argc < 3) {
     //    fprintf(stderr,"usage %s hostname port\n", argv[0]);
     //    exit(0);
@@ -165,6 +137,5 @@ int main(int argc, char *argv[])
     listen_message(&sockfd);
     close(sockfd);
     exit(0);
-
     return 0;
 }

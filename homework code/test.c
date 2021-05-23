@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "datastructure/linkedlist.c"
-#include "server.h"
 
 
 struct tm* get_time(){
@@ -12,33 +11,33 @@ struct tm* get_time(){
 	return localtime(&t);
 }
 
-struct node* check_youngest_msg(struct node* node, struct node* other){
-  if(node == NULL || other == NULL || node == other) return NULL;
-  sender_msg *sender = (sender_msg*) node->value;
-  sender_msg *reciver = (sender_msg*) other->value;
-  struct node* append_before;
-  struct node* actual_node = other;
-
-	timestamp sender_ts = *new_timestamp(sender->message);
-  while(actual_node)
-  {
-		timestamp reciver_ts = *new_timestamp(reciver->message);
-    if(sender_ts.year < reciver_ts.year)
-			append_before = actual_node;
-    else if(sender_ts.year == reciver_ts.year && sender_ts.month < reciver_ts.month)
-			append_before = actual_node;
-    else if(sender_ts.month == reciver_ts.month && sender_ts.day < reciver_ts.day)
-			append_before = actual_node;
-    else if(sender_ts.day == reciver_ts.day && sender_ts.hours < reciver_ts.hours)
-			append_before = actual_node;
-    else if(sender_ts.hours == reciver_ts.hours && sender_ts.min < reciver_ts.min)
-			append_before = actual_node;
-    else if(sender_ts.min == reciver_ts.min && sender_ts.sec < reciver_ts.sec) //if sender < reciver
-			append_before = actual_node;
-    actual_node = actual_node->next;
-  }
-  return append_before;
-}
+// struct node* check_youngest_msg(struct node* node, struct node* other){
+//   if(node == NULL || other == NULL || node == other) return NULL;
+//   sender_msg *sender = (sender_msg*) node->value;
+//   sender_msg *reciver = (sender_msg*) other->value;
+//   struct node* append_before;
+//   struct node* actual_node = other;
+//
+// 	timestamp sender_ts = *new_timestamp(sender->message);
+//   while(actual_node)
+//   {
+// 		timestamp reciver_ts = *new_timestamp(reciver->message);
+//     if(sender_ts.year < reciver_ts.year)
+// 			append_before = actual_node;
+//     else if(sender_ts.year == reciver_ts.year && sender_ts.month < reciver_ts.month)
+// 			append_before = actual_node;
+//     else if(sender_ts.month == reciver_ts.month && sender_ts.day < reciver_ts.day)
+// 			append_before = actual_node;
+//     else if(sender_ts.day == reciver_ts.day && sender_ts.hours < reciver_ts.hours)
+// 			append_before = actual_node;
+//     else if(sender_ts.hours == reciver_ts.hours && sender_ts.min < reciver_ts.min)
+// 			append_before = actual_node;
+//     else if(sender_ts.min == reciver_ts.min && sender_ts.sec < reciver_ts.sec) //if sender < reciver
+// 			append_before = actual_node;
+//     actual_node = actual_node->next;
+//   }
+//   return append_before;
+// }
 int main(){
 
 	// char dateString1[] = "4000-12-10 10:04:54 ajbdkasbdfkjnbfkjsdfkjndkjfn mkmfsm lkfmalkdfm askfm kma";
@@ -85,13 +84,13 @@ int main(){
 	// 	printf("%s\n", ((sender_msg*)actual_node->value)->message);
 	// 	actual_node = actual_node->next;
 	// }
-//  char b [3];
-	//scanf(" %3s", b);
-	//printf("%s\n", b);
-	//while ((getchar()) != '\n');
-	//fflush(stdin);
-	// scanf(" %3s", b);
-	// printf("%s\n", b);
+ char b [3];
+	scanf(" %3s", b);
+	printf("%s\n", b);
+	while ((getchar()) != '\n');
+	fflush(stdin);
+	scanf(" %3s", b);
+	printf("%s\n", b);
 
 
 
