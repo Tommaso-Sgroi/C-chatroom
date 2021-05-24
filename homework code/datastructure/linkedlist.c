@@ -27,7 +27,9 @@ int equals(struct node* node, struct node* node1){
 struct node* insert_first(struct node* first, struct node* insert){
   if(first == insert || first == NULL || insert == NULL) return NULL;
   insert->next = first;
-  insert-> prev = NULL;
+  insert-> prev = first->prev;
+  if(first->prev != NULL)
+    first->prev->next = insert;
   first->prev = insert;
   return insert;
 }
@@ -131,7 +133,7 @@ int append_node_first(struct linkedlist* linked_list, struct node* node){
 }
 
 int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_list){
-  if(node == linked_list->first)//IDK why but if the first element is deleted it make a segmentation fault
+  if(node == linked_list->first || equals(node, linked_list->first))//IDK why but if the first element is deleted it make a segmentation fault
   {
     linked_list->first = node->next != NULL? node->next: NULL;
     linked_list->lenght--;
