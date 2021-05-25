@@ -135,6 +135,7 @@ int append_node_first(struct linkedlist* linked_list, struct node* node){
 int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_list){
   if(node == linked_list->first || equals(node, linked_list->first))//IDK why but if the first element is deleted it make a segmentation fault
   {
+    printf("%s\n", "removing first");
     linked_list->first = node->next != NULL? node->next: NULL;
     linked_list->lenght--;
     return 1;
@@ -146,6 +147,8 @@ int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_lis
   }
   return 0;
 }
+
+//void clear
 
 // void print_linkedlist(struct linkedlist* linkedlist){
 //     struct node* actual_node = linkedlist->first;

@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
     make_linkedlist();
     setup_mutex();
     setup_cond();
+    setup_logs();
   }
 
   void setup_cond() {
@@ -86,6 +87,23 @@ int main(int argc, char *argv[]) {
     {
       fprintf(stderr, "Error in pthread_mutex_init()\n");
       exit(EXIT_FAILURE);
+    }
+  }
+
+  void setup_logs(){
+    DIR* dir = opendir("logs");
+    if (dir) closedir(dir);
+    else if (ENOENT == errno)
+    {
+        int r = mkdir("logs", 0775 );
+        if(r < 0) perror("Cannot create /log dir");
+        r = chmod("logs", 0775 );
+        if(r < 0) perror("Cannot change permission /log dir");
+    }
+    else
+    {
+      perror("Impossibile creare dir logs");
+      exit(1);
     }
   }
 
@@ -177,6 +195,7 @@ int main(int argc, char *argv[]) {
    remove_node_client_fd(node_client_fd);
    remove_node_username(username_node);
    send_goodbye(buffer, name/*, local_log*/);
+   free(client_inf);
    //store_local_log(local_log, client_info_, name);
    //free(local_log);
 
@@ -191,17 +210,17 @@ void append_string_global_log(char*string, int len, int client_fd, char* addr){
 
   sender_msg* msg = new_sender_msg(buffer, client_fd, addr);
   struct node* node = new_node((void*)msg);//new message node
-  if(global_log.last_read) printf("%s\n", "HAS LAST READ");
-  if(global_log.last_read && global_log.last_read->next) printf("%s\n", "HAS NEXT");
+  // if(global_log.last_read) printf("%s\n", "HAS LAST READ");
+  // if(global_log.last_read && global_log.last_read->next) printf("%s\n", "HAS NEXT");
 
   if(global_log.last_read && global_log.last_read->next) //has next; alias-> there are other messages in queue to be sent
   {                                                       //
     //printf("%s\n", "check_youngest_msg enter");
-    struct node* append_before = NULL;
+    struct node* append_before;// = NULL;
     struct node* append_node_before = check_youngest_msg(node, global_log.last_read->next, append_before); //node older than new message
 
-    if(append_node_before == NULL) printf("%s\n", "Append before NULL");
-    else printf("MESSAGGIO PRIMA%s\n", ((sender_msg*)append_node_before->value)->message);
+    // if(append_node_before == NULL) printf("%s\n", "Append before NULL");
+    // else printf("MESSAGGIO PRIMA%s\n", ((sender_msg*)append_node_before->value)->message);
     //printf("%s\n", "insert_first");
     struct node* tmp = insert_first(append_node_before, node); //new node is add first ONLY if is older than anoter msg in queue
     //printf("%s\n", ((sender_msg*)(tmp))->message);
@@ -342,7 +361,8 @@ Parse username from hello message
    append_string_global_log(buffer, strlen(buffer), -1, null_addr);//GLOBAL LOG
    //append_string_local_log(local_log, buffer, strlen(buffer));
  }
-
+  // if(global_log.last_read) printf("%s\n", "HAS LAST READ");
+  // if(global_log.last_read && global_log.last_read->next) printf("%s\n", "HAS NEXT");
  // void store_local_log(struct linkedlist* local_log, client_info* info, char* name){
  //    DIR* dir = opendir("logs");
  //    if (dir)
@@ -417,7 +437,6 @@ Parse username from hello message
  */
 
 int run_consumer(void* null) {
-
   int fd = open("logs/global_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0666);
   if(fd < 0)
     perror("Error while opening global log: ");
@@ -429,11 +448,9 @@ int run_consumer(void* null) {
 Before returning to the  calling  thread,  pthread_cond_wait  re-acquires  mutex  (as   per pthread_lock_mutex).
   src: man pthread_cond_wait; so for keep a time windows of message reception must allow other users to append their MESSAGES
 */
-    printf("%s\n", "Sblocco global lock");
     pthread_mutex_unlock(&global_log.global_log->mutex);
-    sleep(3);
+    sleep(0.5);
     pthread_mutex_lock(&global_log.global_log->mutex);
-    printf("%s, lunghezza messaggi: %i\n", "riblocco global lock", global_log.global_log->lenght);
 
 
     if(global_log.last_read == NULL)//empty linkedlist
@@ -453,11 +470,12 @@ Before returning to the  calling  thread,  pthread_cond_wait  re-acquires  mutex
             write(*(int*)actual_client_fd_node->value, sender->message, BUFFER_SIZE_MESSAGE); //we can ingore errors on write because the producer associated will handle it
         actual_client_fd_node = actual_client_fd_node->next;
       }//fine iterazione sui client_fd
-      store_global_log(sender->message, fd);
+      store_global_log(sender->message, sender->addr, fd);
       pthread_mutex_unlock(&client_fd_linkedlist.mutex);
       if(global_log.last_read->next)
         global_log.last_read = global_log.last_read->next; //aggiorno l'ultimo messaggio
-      else break; //fliush global_log linked list for free memory
+      else
+        break; //fliush global_log linked list for free memory
     }
     //printf("Ultimo messaggio: %s\n", ((sender_msg*)global_log.last_read->value)->message);
 
@@ -466,13 +484,17 @@ Before returning to the  calling  thread,  pthread_cond_wait  re-acquires  mutex
   return 0;
 }
 
-void store_global_log(char* msg, int fd){
+void store_global_log(char* msg, char* cli_address, int fd){
     int byte_w = write(fd, msg, strlen(msg));
     if(byte_w < 0)
       perror("Error while writing logs: ");
+    byte_w = write(fd, cli_address, strlen(cli_address));
+    if(byte_w < 0)
+      perror("Error while writing logs: ");
+    byte_w = write(fd, "\n", 1);
+    if(byte_w < 0)
+      perror("Error while writing logs: ");
 }
-
-
 
 
 int check_peer(int client_fd, char* addr_sender){

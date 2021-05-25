@@ -4,6 +4,7 @@ int setup_server(struct sockaddr_in*, int);
 void setup();
   void setup_mutex();
   void setup_cond();
+  void setup_logs();
 
 void make_linkedlist();
   struct node* append_node_client_fd(int*);
@@ -32,5 +33,6 @@ int run_producers(int);
 
 
 int run_consumer(void*);
-  void store_global_log(char*, int);
+  void store_global_log(char*, char*, int);
   int check_peer(int, char*);
+  void clear_global_log();
