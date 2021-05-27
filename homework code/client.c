@@ -46,6 +46,7 @@ static void send_hello(int sockfd, const char* name, int fd){
   char time [BUFFER_DATE_SIZE];
   char new_name[strlen(has_joined)+BUFFER_NAME_SIZE];
 
+  get_timestamp(time);
   strncat(new_name, has_joined, strlen(has_joined));
   strncat(new_name, name, BUFFER_NAME_SIZE);
 
@@ -88,6 +89,8 @@ static void send_message(void* usr_info){
       get_timestamp(timestamp);
 
       char* message_wrapped = wrap_message(buffer, timestamp, name, message);
+      //char* message_wrapped = wrap_message(buffer, "2020-02-08 15:30:00\n", name, message);
+
       int bye_write = write(sockfd, message_wrapped, strlen(message_wrapped));
       if (bye_write < 0)
            error("ERROR writing to socket", sockfd, fd_local_log);

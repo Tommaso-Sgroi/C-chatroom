@@ -84,15 +84,22 @@ int main(){
 	// 	printf("%s\n", ((sender_msg*)actual_node->value)->message);
 	// 	actual_node = actual_node->next;
 	// }
- char b [3];
-	scanf(" %3s", b);
-	printf("%s\n", b);
-	while ((getchar()) != '\n');
-	fflush(stdin);
-	scanf(" %3s", b);
-	printf("%s\n", b);
+ // char b [3];
+	// scanf(" %3s", b);
+	// printf("%s\n", b);
+	// while ((getchar()) != '\n');
+	// fflush(stdin);
+	// scanf(" %3s", b);
+	// printf("%s\n", b);
+	//printf("aaaaa\nbbbbb\f\rccccc\r\fddddd\reeeee\n");
+	//printf("aaaaa\ebbbbbb\e");
 
+	struct node* node;
+	printf("%d\n", node);
 
+	if(node) printf("%s\n", "YES");
+	else if(node == NULL) printf("%s\n", "NULL");
+	else printf("%s\n", "NO");
 
 	//printf("%d\n", sizeof(char));
 

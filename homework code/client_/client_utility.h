@@ -45,7 +45,7 @@ int check_valid_name(char* name){
 }
 
 void ask_name(char* name){
-  printf("%s", "NEW INSERT NAME:\n");
+  printf("%s", "INSERT NAME:\n");
   do
   {
     printf("Name must be higher than 0, less than %d chars, and must contains only alphanumeric characters\n", BUFFER_NAME_SIZE-1);

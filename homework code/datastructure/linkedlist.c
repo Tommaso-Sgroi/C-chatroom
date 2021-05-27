@@ -24,14 +24,14 @@ int equals(struct node* node, struct node* node1){
   return node == node1 || node->value == node1->value; //NON SONO SICURO FUNZIONI
 }
 
-struct node* insert_first(struct node* first, struct node* insert){
-  if(first == insert || first == NULL || insert == NULL) return NULL;
+int insert_first(struct node* first, struct node* insert){
+  if(first == insert || first == NULL || insert == NULL) return 0;
   insert->next = first;
   insert-> prev = first->prev;
   if(first->prev != NULL)
     first->prev->next = insert;
   first->prev = insert;
-  return insert;
+  return 1;
 }
 
 int append_last(struct node* last, struct node* insert){
@@ -46,19 +46,19 @@ int remove_node(struct node* first, struct node* node_to_remove){
   while(first)//while node != NULL, aren't at the end
   {
     if(equals(first, node_to_remove)) //check nodes
-      {
-        //save prev and next
-        struct node* prev = first->prev;
-        struct node* next = first->next;
+    {
+      //save prev and next
+      struct node* prev = first->prev;
+      struct node* next = first->next;
 
-        //free(first->value);//could be allocated in heap
-        free(first);//deallocate space
-        //link prev and next
-        if(prev!=NULL) prev->next = next;
-        if(next!=NULL) next->prev = prev;
-        return 1;
-      }
-      first = first->next; //go for next node
+      //free(first->value);//could be allocated in heap
+      free(first);//deallocate space
+      //link prev and next
+      if(prev!=NULL) prev->next = next;
+      if(next!=NULL) next->prev = prev;
+      return 1;
+    }
+    first = first->next; //go for next node
     }
   return 0;
 }
@@ -132,12 +132,21 @@ int append_node_first(struct linkedlist* linked_list, struct node* node){
   return 0;
 }
 
+int remove_first_from_linked_list(struct linkedlist* linked_list){
+  struct node* first = linked_list->first;
+  linked_list->first = first->next;
+  if(linked_list->first)
+    linked_list->first->prev = NULL;
+  //free(first->value);
+  free(first);
+  linked_list->lenght--;
+  return 0;
+}
+
 int remove_node_from_linkedlist(struct node* node, struct linkedlist* linked_list){
   if(node == linked_list->first || equals(node, linked_list->first))//IDK why but if the first element is deleted it make a segmentation fault
   {
-    printf("%s\n", "removing first");
-    linked_list->first = node->next != NULL? node->next: NULL;
-    linked_list->lenght--;
+    remove_first_from_linked_list(linked_list);
     return 1;
   }
   else if(remove_node(linked_list->first, node))
