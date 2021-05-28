@@ -74,7 +74,7 @@ static void send_message(void* usr_info){
 
   send_hello(sockfd, name, fd_local_log);
 
-  char buffer[BUFFER_SIZE_MESSAGE + BUFFER_DATE_SIZE + BUFFER_NAME_SIZE];
+  char buffer[BUFFER_SIZE_MESSAGE];
   while (1)
   {
 
@@ -82,7 +82,7 @@ static void send_message(void* usr_info){
 
     char message[BUFFER_SIZE_MESSAGE];
     print_n_flush();
-    fgets(message, BUFFER_SIZE_MESSAGE-1, stdin);
+    fgets(message, BUFFER_SIZE_MESSAGE - BUFFER_NAME_SIZE - BUFFER_DATE_SIZE, stdin);
     if(strlen(message)>1)//if is not void
     {
       char timestamp[BUFFER_DATE_SIZE];
@@ -91,7 +91,7 @@ static void send_message(void* usr_info){
       char* message_wrapped = wrap_message(buffer, timestamp, name, message);
       //char* message_wrapped = wrap_message(buffer, "2020-02-08 15:30:00\n", name, message);
 
-      int bye_write = write(sockfd, message_wrapped, strlen(message_wrapped));
+      int bye_write = write(sockfd, message_wrapped, BUFFER_SIZE_MESSAGE);
       if (bye_write < 0)
            error("ERROR writing to socket", sockfd, fd_local_log);
       store_local_log(fd_local_log, message_wrapped);

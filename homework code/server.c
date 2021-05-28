@@ -157,7 +157,8 @@ int main(int argc, char *argv[]) {
    struct node* username_node;
 
    int byte_read, get_name, error_flag;
-   char name[BUFFER_NAME_SIZE-1];
+   char name[BUFFER_NAME_SIZE+1];
+   memset(name, 0, BUFFER_NAME_SIZE);
    char buffer[BUFFER_SIZE_MESSAGE];
 
    while (1)
@@ -169,6 +170,7 @@ int main(int argc, char *argv[]) {
      {
        get_username(buffer, name);
        pthread_mutex_lock(&usernames.mutex);
+       printf("%s\n", name);
        if(check_username_already_taken(name))
        {
          handle_client_name_taken(client_fd);
@@ -189,9 +191,9 @@ int main(int argc, char *argv[]) {
    }
 
    close(client_fd);
+   send_goodbye(buffer, name);
    remove_node_client_fd(node_client_fd);
    remove_node_username(username_node);
-   send_goodbye(buffer, name);
    free(client_inf);
 
    return error_flag;
@@ -286,9 +288,12 @@ Parse username from hello message
    for(unsigned long int i = 0; i<len; i++)
      if(message[i]=='>')//has joined -->
      {
-        while (message[++i] != '\n')
-         name[flag++] = message[i];
-       break;
+        i+=1;
+        do
+        {
+          name[flag] = message[i];
+          flag++;
+        } while(message[i++] != '\n');
      }
  }
 
@@ -352,7 +357,7 @@ int run_consumer(void* null) {
   {
     pthread_mutex_lock(&global_log.global_log->mutex);
     pthread_cond_wait(&global_log.new_message, &global_log.global_log->mutex);
-    
+
     pthread_mutex_unlock(&global_log.global_log->mutex);
     sleep(0.3);
     pthread_mutex_lock(&global_log.global_log->mutex);
