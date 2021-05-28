@@ -29,7 +29,7 @@ char* wrap_message(char* buffer, char* timestamp, const char* name, char* messag
   //strncat(buffer, "2021-5-24 12:56:30\n", BUFFER_DATE_SIZE);
   strncat(buffer, timestamp, BUFFER_DATE_SIZE);
   strncat(buffer, name, BUFFER_NAME_SIZE);
-  strncat(buffer, message, BUFFER_SIZE_MESSAGE);
+  strncat(buffer, message, BUFFER_MESSAGE);
   return buffer;
 }
 
@@ -41,14 +41,14 @@ int check_valid_name(char* name){
       continue;
     else return 0;
   }
-  return strlen(name) <= BUFFER_NAME_SIZE-1 && strlen(name)>0;
+  return strlen(name) <= 16 && strlen(name)>0;
 }
 
 void ask_name(char* name){
   printf("%s", "INSERT NAME:\n");
   do
   {
-    printf("Name must be higher than 0, less than %d chars, and must contains only alphanumeric characters\n", BUFFER_NAME_SIZE-1);
+    printf("Name must be higher than 0, less than %d chars, and must contains only alphanumeric characters\n", 17);
     scanf("%s", name);
     fflush(stdin);
     //printf("%d\n", check_valid_name(name));

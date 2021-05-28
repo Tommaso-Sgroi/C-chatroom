@@ -78,11 +78,11 @@ static void send_message(void* usr_info){
   while (1)
   {
 
-    memset(buffer, 0, BUFFER_DATE_SIZE + BUFFER_NAME_SIZE);
+    memset(buffer, 0, BUFFER_SIZE_MESSAGE);
 
-    char message[BUFFER_SIZE_MESSAGE];
+    char message[BUFFER_MESSAGE];
     print_n_flush();
-    fgets(message, BUFFER_SIZE_MESSAGE - BUFFER_NAME_SIZE - BUFFER_DATE_SIZE, stdin);
+    fgets(message, BUFFER_MESSAGE, stdin);
     if(strlen(message)>1)//if is not void
     {
       char timestamp[BUFFER_DATE_SIZE];

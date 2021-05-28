@@ -288,12 +288,12 @@ Parse username from hello message
    for(unsigned long int i = 0; i<len; i++)
      if(message[i]=='>')//has joined -->
      {
-        i+=1;
         do
         {
+          i+=1;
           name[flag] = message[i];
           flag++;
-        } while(message[i++] != '\n');
+        } while(message[i] != '\n' && i < len);
      }
  }
 

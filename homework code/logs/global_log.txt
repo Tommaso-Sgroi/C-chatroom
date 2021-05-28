@@ -951,3 +951,143 @@ boh
 HAS LEFT THE CHATROOM-->123456789 
 
  
+2021-5-28 18:25:47
+JOINED-->Carletto 
+127.0.0.1
+2021-5-28 18:25:52
+JOINED-->Carlone 
+127.0.0.1
+127.0.0.1
+2021-5-28 18:25:58
+Carlone:
+ciao
+127.0.0.1
+127.0.0.1
+127.0.0.1
+2021-5-28 18:26:6
+Carletto:
+a te
+127.0.0.1
+127.0.0.1
+2021-5-28 18:26:15
+HAS LEFT THE CHATROOM-->Carlone 
+
+ 
+2021-5-28 18:27:18
+JOINED-->Carletto 
+127.0.0.1
+2021-5-28 18:27:21
+JOINED-->Carlone 
+127.0.0.1
+2021-5-28 18:27:25
+Carlone:
+ciao
+127.0.0.1
+2021-5-28 18:27:28
+Carletto:
+ciao a te
+127.0.0.1
+2021-5-28 18:27:36
+Carletto:
+no a te
+127.0.0.1
+2021-5-28 18:27:44
+Carlone:
+scusa ti sei sbagliatoooooooooooooooooooooooooooooooooo
+127.0.0.1
+2021-5-28 18:27:46
+HAS LEFT THE CHATROOM-->Carlone 
+
+ 
+2021-5-28 18:27:47
+HAS LEFT THE CHATROOM-->Carletto 
+
+ 
+2021-5-28 18:28:14
+JOINED-->Carlettone 
+%127.0.0.1
+2021-5-28 18:28:18
+JOINED-->Carlonettone 
+127.0.0.1
+2021-5-28 18:34:7
+JOINED-->CarloMaccheroni 
+127.0.0.1
+2021-5-28 18:34:14
+JOINED-->AndreaSac 
+127.0.0.1
+2021-5-28 18:34:16
+AndreaSac:
+ciao
+127.0.0.1
+2021-5-28 18:34:29
+CarloMaccheroni:
+ciao a te Andre
+127.0.0.1
+2021-5-28 18:34:35
+CarloMaccheroni:
+hehe
+127.0.0.1
+2021-5-28 18:34:37
+AndreaSac:
+haha
+127.0.0.1
+2021-5-28 18:34:49
+JOINED-->Ignoto 
+127.0.0.1
+2021-5-28 18:34:51
+HAS LEFT THE CHATROOM-->I
+ 
+2021-5-28 18:35:4
+AndreaSac:
+oh..
+127.0.0.1
+2021-5-28 18:35:8
+AndreaSac:
+oibò
+127.0.0.1
+2021-5-28 18:35:10
+AndreaSac:
+ciao
+127.0.0.1
+2021-5-28 18:35:11
+HAS LEFT THE CHATROOM-->A
+ 
+2021-5-28 18:35:12
+HAS LEFT THE CHATROOM-->C
+ 
+2021-5-28 18:37:19
+JOINED-->CarloMaccheroni 
+127.0.0.1
+2021-5-28 18:37:20
+HAS LEFT THE CHATROOM-->C
+ 
+2021-5-28 18:38:35
+JOINED-->CarloMaccheroni 
+127.0.0.1
+2021-5-28 18:38:40
+JOINED-->RichardBenzoni 
+127.0.0.1
+2021-5-28 18:38:45
+CarloMaccheroni:
+Arror
+127.0.0.1
+2021-5-28 18:38:48
+CarloMaccheroni:
+Arrorstor
+127.0.0.1
+2021-5-28 18:38:51
+RichardBenzoni:
+sus
+127.0.0.1
+2021-5-28 18:38:54
+RichardBenzoni:
+amogus
+127.0.0.1
+2021-5-28 18:38:55
+HAS LEFT THE CHATROOM-->RichardBenzoni 
+
+ 
+2021-5-28 18:38:56
+HAS LEFT THE CHATROOM-->CarloMaccheroni 
+
+ 
