@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <string.h>
 #include "datastructure/linkedlist.c"
 
@@ -10,7 +11,11 @@ struct tm* get_time(){
 	time_t t = time(NULL);
 	return localtime(&t);
 }
-
+void* worker(void *arg) {
+  int val = *((int*)arg);
+  printf("% 5d", val);
+  return arg;
+}
 // struct node* check_youngest_msg(struct node* node, struct node* other){
 //   if(node == NULL || other == NULL || node == other) return NULL;
 //   sender_msg *sender = (sender_msg*) node->value;
@@ -94,14 +99,31 @@ int main(){
 	//printf("aaaaa\nbbbbb\f\rccccc\r\fddddd\reeeee\n");
 	//printf("aaaaa\ebbbbbb\e");
 
-	struct node* node;
-	printf("%d\n", node);
+	// struct node* node;
+	// printf("%d\n", node);
+	//
+	// if(node) printf("%s\n", "YES");
+	// else if(node == NULL) printf("%s\n", "NULL");
+	// else printf("%s\n", "NO");
 
-	if(node) printf("%s\n", "YES");
-	else if(node == NULL) printf("%s\n", "NULL");
-	else printf("%s\n", "NO");
+	//printf("%d\n", sizeof(char));#include <stdio.h>
+//#include <stdlib.h>
 
-	//printf("%d\n", sizeof(char));
+
+
+	  pthread_t thid;
+	  pthread_attr_t attr;
+
+	    pthread_attr_init(&attr);
+	    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	    int n = 200;
+	    int x = 0;
+	    for(x = 0; x < n; ++x) {
+	      pthread_create(&thid, &attr, worker, &x);
+	    }
+	  sleep(2);
+	  printf("\n========\n");
 
 	return 0;
 

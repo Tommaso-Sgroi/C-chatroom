@@ -5,7 +5,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include "datastructure/size.h"
-#include "client_/time/timestamp.h"
+#include "client_/time/timestamp.c"
 #include "client_/struct/client_struct.h"
 #include "client_/client_utility.h"
 
@@ -23,7 +23,7 @@ char null_string[] = "";
 -----------------------------LISTEN MESSAGES THREAD----------------------------------
 */
 
-static void* listen_message(int* fd){
+void* listen_message(int* fd){
   int sockfd = *fd;
   char buffer[BUFFER_SIZE_MESSAGE];
   while (1)
@@ -35,6 +35,7 @@ static void* listen_message(int* fd){
     printf("%s\n", str_trim(buffer, n));
     print_n_flush();
   }
+  return NULL;
 }
 
 /*

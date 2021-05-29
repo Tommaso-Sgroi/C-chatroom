@@ -1,12 +1,10 @@
-SOURCE1=server.c
-OUT=server.o
 CC=gcc
 CFLAGS=-Wall
 LDLIBS=-pthread
 
 server: server.c
-	$(CC) $(CFLAGS) server.c $(LDLIBS)
+	$(CC) $(CFLAGS) $(LDLIBS) -o server.o server.c
 
 
 client: client.c
-	gcc -pthread client.c -lpthead
+	$(CC) $(CFLAGS) $(LDLIBS) -o client.o client.c

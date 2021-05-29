@@ -177,7 +177,7 @@ void* handle_client(void* client_inf){
      {
        get_username(buffer, name);
        pthread_mutex_lock(&usernames.mutex);
-       printf("%s\n", name);
+       //printf("%s\n", name);
        if(check_username_already_taken(name))
        {
          handle_client_name_taken(client_fd);
@@ -201,6 +201,8 @@ void* handle_client(void* client_inf){
    send_goodbye(buffer, name, addr);
    remove_node_client_fd(node_client_fd);
    remove_node_username(username_node);
+
+   free(client_info_->cli_addr);
    free(client_inf);
    return NULL;
  }
@@ -223,7 +225,7 @@ void append_string_message_to_send(char*string, int len, int client_fd, char* ad
       message_to_send_struct.message_to_send->first = node;
     else //other msg older than new msg
     {
-      printf("APPENDO ALLA FINE\n");
+      //printf("APPENDO ALLA FINE\n");
       append_node(message_to_send_struct.message_to_send, node);//append node in head of list
     }
   }

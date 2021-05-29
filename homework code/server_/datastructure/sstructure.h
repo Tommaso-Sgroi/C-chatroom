@@ -36,9 +36,12 @@ sender_msg* new_sender_msg(char* message, int sockfd, char* addr){
   return sender;
 }
 
-client_info* new_client_info(struct sockaddr_in * addr, int cli_fd){
+client_info* new_client_info(struct sockaddr_in* addr, int cli_fd){
   client_info* info = (client_info*)malloc(sizeof(client_info));
-  info->cli_addr = inet_ntoa(addr->sin_addr);
+  char* address = inet_ntoa(addr->sin_addr);
+  char* heap_client_address = (char*)calloc(strlen(address), sizeof(char));
+  strncpy(heap_client_address, address, strlen(address));
+  info->cli_addr = heap_client_address;
   info->cli_fd = cli_fd;
   return info;
 }
