@@ -1091,3 +1091,98 @@ HAS LEFT THE CHATROOM-->RichardBenzoni
 HAS LEFT THE CHATROOM-->CarloMaccheroni 
 
  
+2021-5-29 12:43:7
+JOINED-->older 
+127.0.0.1
+2021-5-29 12:43:12
+JOINED-->newer 
+127.0.0.1
+2021-5-29 12:43:17
+JOINED-->Joshua 
+127.0.0.1
+2021-5-29 12:43:32
+newer:
+f
+127.0.0.1
+2020-02-08 15:30:00
+older:
+g
+127.0.0.1
+2021-5-29 12:43:36
+HAS LEFT THE CHATROOM-->older 
+
+ 
+2021-5-29 12:43:37
+HAS LEFT THE CHATROOM-->newer 
+
+ 
+2021-5-29 12:43:38
+HAS LEFT THE CHATROOM-->Joshua 
+
+ 
+2021-5-29 12:44:27
+JOINED-->neweer 
+127.0.0.1
+2021-5-29 12:44:32
+JOINED-->elder 
+127.0.0.1
+2021-5-29 12:44:40
+JOINED-->CarloMaccheroni 
+127.0.0.1
+2020-02-08 15:30:00
+CarloMaccheroni:
+ciao
+127.0.0.1
+2020-02-08 15:30:00
+CarloMaccheroni:
+ao
+127.0.0.1
+2020-02-08 15:30:00
+elder:
+eh?
+127.0.0.1
+2021-5-29 12:45:16
+neweer:
+a
+127.0.0.1
+2020-02-08 15:30:00
+elder:
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+127.0.0.1
+2021-5-29 12:45:31
+neweer:
+aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbb
+127.0.0.1
+2021-5-29 12:46:10
+HAS LEFT THE CHATROOM-->elder 
+
+ 
+2021-5-29 12:46:11
+HAS LEFT THE CHATROOM-->CarloMaccheroni 
+
+ 
+2021-5-29 12:46:13
+HAS LEFT THE CHATROOM-->neweer 
+
+ 
+2021-5-29 13:1:4
+JOINED-->a 
+127.0.0.1
+2021-5-29 13:1:5
+HAS LEFT THE CHATROOM-->a 
+
+127.0.0.1
+2021-5-29 13:1:30
+JOINED-->a 
+127.0.0.1
+2021-5-29 13:1:32
+JOINED-->b 
+127.0.0.1
+2021-5-29 13:1:34
+HAS LEFT THE CHATROOM-->b 
+
+127.0.0.1
+2021-5-29 13:1:38
+HAS LEFT THE CHATROOM-->a 
+
+127.0.0.1

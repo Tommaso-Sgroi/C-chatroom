@@ -17,6 +17,7 @@ void error(const char *msg, int sockfd, int local_log_fd)
     exit(0);
 }
 
+char null_string[] = "";
 
 /*
 -----------------------------LISTEN MESSAGES THREAD----------------------------------
@@ -40,7 +41,7 @@ static void* listen_message(int* fd){
 ---------------------------SEND MESSAGES THREAD--------------------------------------
 */
 
-static void send_hello(int sockfd, const char* name, int fd){
+void send_hello(int sockfd, const char* name, int fd){
   char has_joined[]= "JOINED-->";
   char buff_out[strlen(name) + BUFFER_DATE_SIZE + strlen(has_joined)];
   char time [BUFFER_DATE_SIZE];
@@ -55,7 +56,7 @@ static void send_hello(int sockfd, const char* name, int fd){
       new_name[i] = ' ';
       break;
     }
-  wrap_message(buff_out, time, new_name, "");
+  wrap_message(buff_out, time, new_name, null_string);
 
   int bye_write = write(sockfd, buff_out, strlen(buff_out));
   if (bye_write < 0)
@@ -65,7 +66,7 @@ static void send_hello(int sockfd, const char* name, int fd){
 
 
 
-static void send_message(void* usr_info){
+void* send_message(void* usr_info){
   struct user_info* usr = (struct user_info*)usr_info;
   int fd_local_log = open("logs/local_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0666);
 
@@ -73,7 +74,7 @@ static void send_message(void* usr_info){
   const char* name = usr->name;
 
   send_hello(sockfd, name, fd_local_log);
-
+  printf("%s\n", "Press ctrl+c for quit the CHATROOM");
   char buffer[BUFFER_SIZE_MESSAGE];
   while (1)
   {
