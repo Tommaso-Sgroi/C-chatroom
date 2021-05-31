@@ -12,12 +12,7 @@
 #include "datastructure/size.h"
 #define MAX_CLIENT_QUEUE_REQUEST 16
 
-// void error(const char *msg)
-// {
-//     perror(msg);
-//     int exitno = 1;
-//     pthread_exit(&exitno);
-// }
+
 
 struct linkedlist client_fd_linkedlist, usernames; //linkedlist per contenere client_fd e gli usernames in modo dinamico
 
@@ -38,10 +33,17 @@ struct {
 //   exit(EXIT_SUCCESS);
 // }
 
+void sighandler(int signo)
+{
+	if(signo == SIGUSR1)
+    exit(EXIT_SUCCESS);
+}
+
 /*
 -----------------------------MAIN---------------------------------------
 */
 int main(int argc, char *argv[]) {
+  printf("Use \"kill -s SIGUSR1 %d\" for stop the server\n", getpid());
   setup(); //crea le liste linkate, crea le mutex, crea le conditions e crea l'ambiente per i log
   pthread_t tid; //thread id del consumatore
 
@@ -81,6 +83,19 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  void setup_signal_handler(){
+    struct sigaction act;
+
+    act.sa_handler = &sighandler;//specifico funziona da invocare
+
+    sigfillset(&act.sa_mask);//blocco e/o rallento tutti i segnali in arrivo durante l'handler
+
+    if(sigaction(SIGINT, &act, NULL) == -1) //aggiungo il signal handler
+    {//se errore non è sicuro prosegurie
+      perror("sigaction:");
+      exit(EXIT_FAILURE);
+    }
+  }
   void setup_mutex(){
 
     if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0 || pthread_mutex_init(&message_to_send_struct.message_to_send->mutex, NULL) != 0) //inizializza le mutex per le liste linkate del client_fd e i messaggi da mandare
@@ -370,9 +385,10 @@ void* run_consumer(void* null) {
     pthread_mutex_lock(&message_to_send_struct.message_to_send->mutex); //fa un lock sui messaggi da mandare per poi mettersi in ascolto sulla condition
     pthread_cond_wait(&message_to_send_struct.new_message, &message_to_send_struct.message_to_send->mutex);//rilascia il lock e si mette in asclto
 
-    pthread_mutex_unlock(&message_to_send_struct.message_to_send->mutex); //all'arrivo du un messaggio crea ina finestra temporale per dare modo ad altri messaggi
-    sleep(0.3);                                                   //ritardatari di arrivare e mettersi prima o dopo il messaggio arrivato a seconda del timestamp
-    pthread_mutex_lock(&message_to_send_struct.message_to_send->mutex);//riprende il controllo della lock per escludere i produttori ad inserire messaggi
+    sleep(0.15);
+    // pthread_mutex_unlock(&message_to_send_struct.message_to_send->mutex); //all'arrivo du un messaggio crea ina finestra temporale per dare modo ad altri messaggi
+    // sleep(0.3);                                                   //ritardatari di arrivare e mettersi prima o dopo il messaggio arrivato a seconda del timestamp
+    // pthread_mutex_lock(&message_to_send_struct.message_to_send->mutex);//riprende il controllo della lock per escludere i produttori ad inserire messaggi
 
     while(message_to_send_struct.message_to_send->first)//itero sulla linkedlist: while has next, ed è certo avere almeno 1 elemento
     {
