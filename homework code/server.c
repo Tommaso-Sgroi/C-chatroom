@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <signal.h>//TO REMOVE?
 #include <pthread.h>
@@ -22,21 +23,25 @@ struct {
   pthread_cond_t new_message; //segnala al thread consumatore che è arrivato un nuovo messaggio
 } message_to_send_struct; //serve solo una unica istanza di questa struttura in cui vengono inseriti i messaggi in arrivo ordinati secondo timestamp
 
-// void catch_ctrl_c_and_exit(int sig) { //serve per uscire in modo
-//   printf("CATCH\n");
-//   struct node *clifd = client_fd_linkedlist.first;
-//   while (clifd)
-//   {
-//       close(*(int*)clifd->value); // close all socket include server_sockfd
-//       clifd = clifd->next;
-//   }
-//   exit(EXIT_SUCCESS);
-// }
-
 void sighandler(int signo)
 {
 	if(signo == SIGUSR1)
+  {
+    pthread_mutex_lock(&client_fd_linkedlist.mutex);
+
+    struct node *clifd = client_fd_linkedlist.first;
+    int sockfd;
+    char server_close[] = "Server closed!\nGoodbye!\n";
+    int len = strlen(server_close);
+    while (clifd)
+    {
+      sockfd = *(int*)clifd->value;
+      write(sockfd, server_close, len);
+      shutdown(*(int*)clifd->value, SHUT_RDWR); // close all socket include server_sockfd
+      clifd = clifd->next;
+    }
     exit(EXIT_SUCCESS);
+  }
 }
 
 /*
@@ -69,6 +74,7 @@ int main(int argc, char *argv[]) {
   }
 
   void setup(){
+    setup_signal_handler();
     make_linkedlist();
     setup_mutex();
     setup_cond();
@@ -85,10 +91,20 @@ int main(int argc, char *argv[]) {
 
   void setup_signal_handler(){
     struct sigaction act;
+    sigset_t set; /* insieme di segnali (simile all'insieme di fd della select...) */
 
-    act.sa_handler = &sighandler;//specifico funziona da invocare
+    sigemptyset( &set ); /* set = {} */
+    sigaddset( &set, SIGUSR1 ); /* set = {SIGUSR1} */
+    sigaddset( &set, SIGUSR2 ); /* set = {SIGUSR1, SIGUSR2} */
 
-    sigfillset(&act.sa_mask);//blocco e/o rallento tutti i segnali in arrivo durante l'handler
+    act.sa_flags = 0; /* questo campo serve principalmente per chiarire alcuni usi di SIGCHLD,
+       ma c'e' anche SA_NODEFER, vedere il man  */
+    act.sa_mask = set; /* i segnali in set sono "masked": se arriveranno mentre l'handler e'
+        in esecuzione, verranno messi in attesa (nel qual caso, si sta gia'
+        gestendo un SIGUSR1...) */
+    act.sa_handler = &sighandler; /* puntatore alla funzione (di cui e' stato dato il prototipo
+          come prima istruzione del main) */
+    sigaction( SIGUSR1, &act, NULL );
 
     if(sigaction(SIGINT, &act, NULL) == -1) //aggiungo il signal handler
     {//se errore non è sicuro prosegurie

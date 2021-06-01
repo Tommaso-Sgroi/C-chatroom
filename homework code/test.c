@@ -1,130 +1,96 @@
+/* Program to demonstrate the use of the signal handler to send
+ * and catch signals.
+ *
+ * Just compile and run, nothing to input.
+ */
 
 #include <stdio.h>
-#include <time.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include <string.h>
-#include "datastructure/linkedlist.c"
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 
-struct tm* get_time(){
-	time_t t = time(NULL);
-	return localtime(&t);
+int x = 0;
+
+main()
+{
+   int status;
+   int pid;                // pid depending on parent or child
+   int o;                  // dummy variable return from kill
+   void handler(int);         // signal handler prototype
+   void handler1(int);        // signal handler prototype
+   struct sigaction mySigActions;
+
+   /*
+    * Get a child process
+    */
+   if((pid = fork()) < 0)
+   {
+      printf("%s\n","fork error");
+      exit(1);
+   }
+   printf("parent/child process id = %d\n",pid);
+   /*
+    * The child executes the code inside the if
+    */
+   if (pid == 0)
+   {
+//      sigset(SIGUSR1, handler);  // set handler to use the function
+//      signal(SIGUSR1, handler);  // sigset could also be used
+                                   // works similar to signal
+        signal(SIGUSR2, handler1); // set handler to use the function
+  mySigActions.sa_handler = handler;
+  sigemptyset(&mySigActions.sa_mask);
+  mySigActions.sa_flags = 0;
+  //if (sigaction(SIGUSR1, &sa, NULL) < 0) {
+  if (sigaction(SIGUSR1, NULL, NULL) < 0) {
+    printf("Sigaction failed for SIGHUP");
+    exit(1);
+  }
+
+     printf("executing in the child process\n");
+     printf("in the child process waiting for a signal\n");
+      sleep(20);
+      while (1){};// printf("waiting   "); sleep(0);}
+   }
+
+
+
+   /*
+    * The parent executes the following.
+    */
+   else {
+      printf("executing in the parent process\n");
+      printf("pid = %d\n",pid);   // the child pid
+      sleep(1);                   // wait to be sure the child has
+                                  // a chance to execute
+      o = kill(pid, SIGUSR1);     // send the signal to child
+      printf("parent just sent sig1 o = %d\n",o);
+      sleep(3);                   // wait to be sure the child has
+
+      o = kill(pid, SIGUSR2);     // send the signal to child
+      printf("parent just sent SIGUSR2 o = %d\n",o);
+      sleep(1);
+
+      o = kill(pid, SIGKILL);     // send the signal to child
+      printf("SIGKILL o = %d\n",o);
+      while(wait(&status) != pid) // wait for the child to finish
+         printf("parent waiting\n ");
+   }
 }
-void* worker(void *arg) {
-  int val = *((int*)arg);
-  printf("% 5d", val);
-  return arg;
+
+void handler(int signo)
+{
+   printf("Signal received In signal handler signo = %d\n",signo);
+   printf("In signal handler NONE \n\n\n");
 }
-// struct node* check_youngest_msg(struct node* node, struct node* other){
-//   if(node == NULL || other == NULL || node == other) return NULL;
-//   sender_msg *sender = (sender_msg*) node->value;
-//   sender_msg *reciver = (sender_msg*) other->value;
-//   struct node* append_before;
-//   struct node* actual_node = other;
-//
-// 	timestamp sender_ts = *new_timestamp(sender->message);
-//   while(actual_node)
-//   {
-// 		timestamp reciver_ts = *new_timestamp(reciver->message);
-//     if(sender_ts.year < reciver_ts.year)
-// 			append_before = actual_node;
-//     else if(sender_ts.year == reciver_ts.year && sender_ts.month < reciver_ts.month)
-// 			append_before = actual_node;
-//     else if(sender_ts.month == reciver_ts.month && sender_ts.day < reciver_ts.day)
-// 			append_before = actual_node;
-//     else if(sender_ts.day == reciver_ts.day && sender_ts.hours < reciver_ts.hours)
-// 			append_before = actual_node;
-//     else if(sender_ts.hours == reciver_ts.hours && sender_ts.min < reciver_ts.min)
-// 			append_before = actual_node;
-//     else if(sender_ts.min == reciver_ts.min && sender_ts.sec < reciver_ts.sec) //if sender < reciver
-// 			append_before = actual_node;
-//     actual_node = actual_node->next;
-//   }
-//   return append_before;
-// }
-int main(){
-
-	// char dateString1[] = "4000-12-10 10:04:54 ajbdkasbdfkjnbfkjsdfkjndkjfn mkmfsm lkfmalkdfm askfm kma";
-	// char dateString2[] = "2020-01-01 00:00:00 mkmfsm lkfmalkdfm askfm kma";
-	//
-	// //printf("%s\n", buffer);
-	// sender_msg* msg1 = new_sender_msg(dateString1, -1, "addr1");
-	// sender_msg* msg2 = new_sender_msg(dateString2, -1, "addr2");
-	//
-	// struct linkedlist* linked = new_linkedlist(NULL);
-	//
-	// struct node* node1 = new_node((void*)msg1);//da inserire
-	// struct node* node2 = new_node((void*)msg2);
-	//
-	// append_node(linked, node2);
-	//
-	// struct node* append_before = check_youngest_msg(node1, node2);
-	// printf("Append before of %s\n", append_before == NULL? "NULL": ((sender_msg*)append_before->value)->message);
-	// struct node* tmp = insert_first(append_before, node1);
-	// if(linked->lenght == 1 && tmp)
-	// {
-	// 	linked->first = tmp;
-	// }
-	// else if(tmp == NULL)
-	// {
-	// 	append_node(linked, node1);
-	// }
-
-	// char path_prefix [] = "./logs/";
-	// char path_suffix[] = ".txt";
-	// char path [strlen(path_prefix) + BUFFER_NAME_SIZE + strlen(path_suffix)];
-	// char real_name[BUFFER_NAME_SIZE];
-	// strncpy(real_name, name, strlen(name)-1);
-	// strcat(path, path_prefix);
-	// strcat(path, real_name);
-	// strcat(path, path_suffix);
-	// printf("%s\n", path);
 
 
-	// printf("Message Appended %s\n", tmp == NULL? "NULL": ((sender_msg*)tmp->value)->message);
-	// struct node* actual_node = linked->first;
-	// while(actual_node)
-	// {
-	// 	printf("%s\n", ((sender_msg*)actual_node->value)->message);
-	// 	actual_node = actual_node->next;
-	// }
- // char b [3];
-	// scanf(" %3s", b);
-	// printf("%s\n", b);
-	// while ((getchar()) != '\n');
-	// fflush(stdin);
-	// scanf(" %3s", b);
-	// printf("%s\n", b);
-	//printf("aaaaa\nbbbbb\f\rccccc\r\fddddd\reeeee\n");
-	//printf("aaaaa\ebbbbbb\e");
-
-	// struct node* node;
-	// printf("%d\n", node);
-	//
-	// if(node) printf("%s\n", "YES");
-	// else if(node == NULL) printf("%s\n", "NULL");
-	// else printf("%s\n", "NO");
-
-	//printf("%d\n", sizeof(char));#include <stdio.h>
-//#include <stdlib.h>
-
-
-
-	  pthread_t thid;
-	  pthread_attr_t attr;
-
-	    pthread_attr_init(&attr);
-	    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-	    int n = 200;
-	    int x = 0;
-	    for(x = 0; x < n; ++x) {
-	      pthread_create(&thid, &attr, worker, &x);
-	    }
-	  sleep(2);
-	  printf("\n========\n");
-
-	return 0;
-
+void handler1(int signo)
+{
+   printf("Signal received In signal handler1 signo = %d\n",signo);
+   printf("In signal handler ONE  \n\n\n");
 }

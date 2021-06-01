@@ -202,3 +202,23 @@ JOINED-->a
 JOINED-->a 
 2021-5-31 21:27:12
 JOINED-->a 
+2021-6-1 15:8:38
+JOINED-->carlo 
+2021-6-1 15:8:42
+JOINED-->riccardo 
+2021-6-1 15:8:44
+riccardo:
+ciao
+2021-6-1 15:8:50
+carlo:
+come va?
+2021-6-1 15:8:53
+riccardo:
+dimmerda
+2021-6-1 15:8:58
+carlo:
+buono a sapersi
+2021-6-1 15:11:40
+JOINED-->a 
+2021-6-1 15:11:42
+JOINED-->b 

@@ -2,6 +2,7 @@
 
 int setup_server(struct sockaddr_in*, int);
 void setup();
+  void setup_signal_handler();
   void setup_mutex();
   void setup_cond();
   void setup_logs();
