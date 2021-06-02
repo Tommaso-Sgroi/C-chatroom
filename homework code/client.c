@@ -108,6 +108,17 @@ void* send_message(void* usr_info){
 ---------------MAIN-------------------------------------
 */
 int main(int argc, char *argv[]){
+    if(argc > 2)
+    {
+      fprintf(stderr, "Too many arguments, argument must be the port number\n");
+      exit(EXIT_FAILURE);
+    }
+    else if(argc < 2)
+    {
+      fprintf(stderr, "Port not found, argument must be the port number\n");
+      exit(EXIT_FAILURE);
+    }
+
     setup_log();
 
     int sockfd, portno;
@@ -117,11 +128,7 @@ int main(int argc, char *argv[]){
 
     char name[BUFFER_NAME_SIZE+2]; //bisogna fare scanf con ":\n"
     ask_name(name);
-    // if (argc < 3) {
-    //    fprintf(stderr,"usage %s hostname port\n", argv[0]);
-    //    exit(0);
-    // }
-    portno = atoi(/*argv[2]*/"4444");
+    portno = atoi(argv[1]);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)

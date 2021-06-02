@@ -24,10 +24,10 @@ void* run_producers(int);
     //void append_string_local_log(struct linkedlist*, char*, int);
 
     void parse_timestamp(char*, struct tm*);
-    struct node* check_youngest_msg(struct node*, struct node*, struct node*);
+    struct node* check_youngest_msg(struct node*, struct node*);
 
     void send_goodbye(char*, char*, char*);
-    int remove_node_username(struct node*);
+    void remove_node_username(struct node*);
 
     //void store_local_log(struct linkedlist*, client_info*, char*);
 
