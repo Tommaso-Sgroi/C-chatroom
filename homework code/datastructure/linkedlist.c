@@ -82,7 +82,7 @@ int remove_node(struct node* first, struct node* node_to_remove){ //cerca  e rim
 
 //INSTANTIATION FUNCTIONS
 struct node* new_node(void* value){ //crea un nuovo nodo con i valori inizializzati a null
-  struct node *node = (struct node*)malloc(sizeof(struct node)); //alloca nell'heap
+  struct node *node = (struct node*)calloc(1, sizeof(struct node)); //alloca nell'heap
   (*node).next = NULL;
   (*node).prev = NULL;
   (*node).value = value;

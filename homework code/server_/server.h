@@ -1,4 +1,4 @@
-#include "datastructure/sstructure.h"
+#include "datastructure/sstructure.c"
 
 int setup_server(struct sockaddr_in*, int);
 void setup();

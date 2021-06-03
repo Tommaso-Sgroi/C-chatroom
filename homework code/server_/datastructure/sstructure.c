@@ -27,17 +27,17 @@ timestamp* new_timestamp(char* buffer){
 }
 
 sender_msg* new_sender_msg(char* message, int sockfd, char* addr){
-  char* address = (char*) calloc(strlen(addr), sizeof(char));
+  char* address = (char*) calloc(strlen(addr) + 1, sizeof(char));
   strncpy(address, addr, strlen(addr));
-  sender_msg* sender =(sender_msg*) malloc(sizeof(sender_msg));
+  sender_msg* sender = (sender_msg*) calloc(1, sizeof(sender_msg)); //ERRORE QUI, ACCADE SOLO QUNADO UNO USER SI DISCONNETTE
   sender->message = message;
   sender->sockfd = sockfd;
-  sender-> addr = address;
+  sender->addr = address;
   return sender;
 }
 
 client_info* new_client_info(struct sockaddr_in* addr, int cli_fd){
-  client_info* info = (client_info*)malloc(sizeof(client_info));
+  client_info* info = (client_info*) calloc(1, sizeof(client_info));
   char* address = inet_ntoa(addr->sin_addr);
   char* heap_client_address = (char*)calloc(strlen(address), sizeof(char));
   strncpy(heap_client_address, address, strlen(address));

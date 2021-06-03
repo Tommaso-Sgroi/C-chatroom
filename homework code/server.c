@@ -8,6 +8,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <errno.h>
+#include <execinfo.h>
 #include "datastructure/linkedlist.c"
 #include "server_/server.h"
 #include "datastructure/size.h"
@@ -25,25 +26,38 @@ struct {
 
 
 
-void sighandler(int signo)
-{
-	if(signo == SIGUSR1) //intercetta il segnale SIGUSR1
-  {
-    pthread_mutex_lock(&client_fd_linkedlist.mutex); //sezione critica del client_fd, non deve cambiare durante l'iterazione per evitare di leggere da aree di memoria altrimenti invalide
+// void sighandler(int signo)
+// {
+// 	if(signo == SIGUSR1) //intercetta il segnale SIGUSR1
+//   {
+//     pthread_mutex_lock(&client_fd_linkedlist.mutex); //sezione critica del client_fd, non deve cambiare durante l'iterazione per evitare di leggere da aree di memoria altrimenti invalide
+//
+//     struct node *clifd = client_fd_linkedlist.first; //primo nodo contente il client_fd
+//     int sockfd; //qui è dove verrà estratto l'fd del client
+//     char server_close[] = "Server closed!\nGoodbye!\n"; //stringa di avviso della chiusura del server
+//     int len = strlen(server_close); //lunghezza
+//     while(clifd) //itero sui client fd
+//     {
+//       sockfd = *(int*)clifd->value; //valore del clientfd
+//       write(sockfd, server_close, len); //scrivo sul client_fd senza preoccuparsi degli errori (tanto il server sta venendo chiuso)
+//       shutdown(*(int*)clifd->value, SHUT_RDWR); //chiude la socket in letttura e scrittura
+//       clifd = clifd->next; //prossimo nodo
+//     }
+//     exit(EXIT_SUCCESS); //esce esce da tutti i thread con successo
+//   }
+// }
 
-    struct node *clifd = client_fd_linkedlist.first; //primo nodo contente il client_fd
-    int sockfd; //qui è dove verrà estratto l'fd del client
-    char server_close[] = "Server closed!\nGoodbye!\n"; //stringa di avviso della chiusura del server
-    int len = strlen(server_close); //lunghezza
-    while(clifd) //itero sui client fd
-    {
-      sockfd = *(int*)clifd->value; //valore del clientfd
-      write(sockfd, server_close, len); //scrivo sul client_fd senza preoccuparsi degli errori (tanto il server sta venendo chiuso)
-      shutdown(*(int*)clifd->value, SHUT_RDWR); //chiude la socket in letttura e scrittura
-      clifd = clifd->next; //prossimo nodo
-    }
-    exit(EXIT_SUCCESS); //esce esce da tutti i thread con successo
-  }
+void handler(int sig) {
+  void *array[10];
+  size_t size;
+
+  // get void*'s for all entries on the stack
+  size = backtrace(array, 10);
+
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+  backtrace_symbols_fd(array, size, STDERR_FILENO);
+  exit(1);
 }
 
 /*
@@ -60,6 +74,9 @@ int main(int argc, char *argv[]) {
   //   fprintf(stderr, "Port not found, argument must be the port number\n");
   //   exit(EXIT_FAILURE);
   // }
+  signal(SIGSEGV, handler);   // install our handler
+
+
   printf("Use \"kill -s SIGUSR1 %d\" for stop the server\n", getpid());
   setup(); //crea le liste linkate, crea le mutex, crea le conditions e crea l'ambiente per i log
   pthread_t tid; //thread id del consumatore
@@ -79,14 +96,13 @@ int main(int argc, char *argv[]) {
  */
 
   int setup_server(struct sockaddr_in* serv_addr, int port){
-    serv_addr->sin_family = AF_INET; //permette di fare binding sulla porta
     serv_addr->sin_addr.s_addr = INADDR_ANY; //permette connessioni da tutti gli indirizzi
     serv_addr->sin_port = htons(port); //imposta la porta
     return 0;
   }
 
   void setup(){
-    setup_signal_handler();
+    //setup_signal_handler();
     make_linkedlist();
     setup_mutex();
     setup_cond();
@@ -101,28 +117,28 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  void setup_signal_handler(){
-    struct sigaction act;
-    sigset_t set; /* insieme di segnali (simile all'insieme di fd della select...) */
-
-    sigemptyset( &set ); /* set = {} */
-    sigaddset( &set, SIGUSR1 ); /* set = {SIGUSR1} */
-
-    act.sa_flags = 0; /* questo campo serve principalmente per chiarire alcuni usi di SIGCHLD,
-       ma c'e' anche SA_NODEFER, vedere il man  */
-    act.sa_mask = set; /* i segnali in set sono "masked": se arriveranno mentre l'handler e'
-        in esecuzione, verranno messi in attesa (nel qual caso, si sta gia'
-        gestendo un SIGUSR1...) */
-    act.sa_handler = &sighandler; /* puntatore alla funzione (di cui e' stato dato il prototipo
-          come prima istruzione del main) */
-    sigaction( SIGUSR1, &act, NULL );
-
-    if(sigaction(SIGINT, &act, NULL) == -1) //aggiungo il signal handler
-    {//se errore non è sicuro prosegurie
-      perror("sigaction:");
-      exit(EXIT_FAILURE);
-    }
-  }
+  // void setup_signal_handler(){
+  //   struct sigaction act;
+  //   sigset_t set; /* insieme di segnali (simile all'insieme di fd della select...) */
+  //
+  //   sigemptyset( &set ); /* set = {} */
+  //   sigaddset( &set, SIGUSR1 ); /* set = {SIGUSR1} */
+  //
+  //   act.sa_flags = 0; /* questo campo serve principalmente per chiarire alcuni usi di SIGCHLD,
+  //      ma c'e' anche SA_NODEFER, vedere il man  */
+  //   act.sa_mask = set; /* i segnali in set sono "masked": se arriveranno mentre l'handler e'
+  //       in esecuzione, verranno messi in attesa (nel qual caso, si sta gia'
+  //       gestendo un SIGUSR1...) */
+  //   act.sa_handler = &sighandler; /* puntatore alla funzione (di cui e' stato dato il prototipo
+  //         come prima istruzione del main) */
+  //   sigaction( SIGUSR1, &act, NULL );
+  //
+  //   if(sigaction(SIGINT, &act, NULL) == -1) //aggiungo il signal handler
+  //   {//se errore non è sicuro prosegurie
+  //     perror("sigaction:");
+  //     exit(EXIT_FAILURE);
+  //   }
+  // }
   void setup_mutex(){
 
     if(pthread_mutex_init(&client_fd_linkedlist.mutex, NULL) != 0 || pthread_mutex_init(&message_to_send_struct.message_to_send->mutex, NULL) != 0) //inizializza le mutex per le liste linkate del client_fd e i messaggi da mandare
@@ -248,6 +264,7 @@ void* handle_client(void* client_inf){
          printf("%s\n","appendo un nodo con il client fd" );
          node_client_fd = append_node_client_fd(&client_info_->cli_fd); //appendo il nodo dei client_fd alla lista, vedere funzione ->
          //local_log = new_linkedlist(NULL);
+         printf("%s %d\n", name, client_info_->cli_fd);
        }
        if(flag) break; //if il nome è già stato preso allora esci dal while che ormai la connessione è chiusa
        get_name++; //incrementa l'intero per inidcare che il nome dello user è già stato estratto e di non tornare qui
@@ -272,7 +289,7 @@ void* handle_client(void* client_inf){
    printf("%s\n", "libero lo spazio cli_addr");
    free(client_info_->cli_addr); //libera dall'heap il client address
    printf("%s\n", "libero lo spazio client_inf");
-   free(client_inf); //libera dall'heap la struttura client_info
+   free(client_info_); //libera dall'heap la struttura client_info
    printf("\n");
    return NULL;
  }
@@ -284,7 +301,7 @@ void append_string_message_to_send(char*string, int len, int client_fd, char* ad
   printf("%s\n", "copio nell'heap il messaggio dello user");
   buffer = strncpy(buffer, string, len);//copio il messaggio, che si trova nello stack, nell'heap
 
-  printf("Creo una struttura sender msg");
+  printf("Creo una struttura sender msg\n");
   fflush(stdout);
   sender_msg* msg = new_sender_msg(buffer, client_fd, addr);//creo una struct sender_msg, che contiene il buffer del mesaggio nell'heap, il client_fd e l'indirizzo del mittente
   printf("%s\n", "inserisco la struttura in un nodo");

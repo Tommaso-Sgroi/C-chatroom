@@ -1,15 +1,18 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <signal.h>//TO REMOVE?
+#include <pthread.h>
+#include <signal.h>
+#include <time.h>
+#include <dirent.h>
+#include <errno.h>
 
 int main(int argc, char const *argv[]) {
 
-  int* i = (int*)malloc(sizeof(int));
-  printf("%i\n", i);
-  *i = 6;
-  printf("%i\n", *i);
-  free(i);
-
-  printf("%i\n", i);
-  printf("%i\n", *i);
+  write(10, "ciao", 10);
   return 0;
 }
