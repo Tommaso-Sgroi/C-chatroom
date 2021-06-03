@@ -108,16 +108,16 @@ void* send_message(void* usr_info){
 ---------------MAIN-------------------------------------
 */
 int main(int argc, char *argv[]){
-    if(argc > 2)
-    {
-      fprintf(stderr, "Too many arguments, argument must be the port number\n");
-      exit(EXIT_FAILURE);
-    }
-    else if(argc < 2)
-    {
-      fprintf(stderr, "Port not found, argument must be the port number\n");
-      exit(EXIT_FAILURE);
-    }
+    // if(argc > 2)
+    // {
+    //   fprintf(stderr, "Too many arguments, argument must be the port number\n");
+    //   exit(EXIT_FAILURE);
+    // }
+    // else if(argc < 2)
+    // {
+    //   fprintf(stderr, "Port not found, argument must be the port number\n");
+    //   exit(EXIT_FAILURE);
+    // }
 
     setup_log();
 
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]){
 
     char name[BUFFER_NAME_SIZE+2]; //bisogna fare scanf con ":\n"
     ask_name(name);
-    portno = atoi(argv[1]);
+    portno = atoi("6000");
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)

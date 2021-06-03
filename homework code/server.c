@@ -50,16 +50,16 @@ void sighandler(int signo)
 -----------------------------MAIN---------------------------------------
 */
 int main(int argc, char *argv[]) {
-  if(argc > 2)
-  {
-    fprintf(stderr, "Too many arguments, argument must be the port number\n");
-    exit(EXIT_FAILURE);
-  }
-  else if(argc < 2)
-  {
-    fprintf(stderr, "Port not found, argument must be the port number\n");
-    exit(EXIT_FAILURE);
-  }
+  // if(argc > 2)
+  // {
+  //   fprintf(stderr, "Too many arguments, argument must be the port number\n");
+  //   exit(EXIT_FAILURE);
+  // }
+  // else if(argc < 2)
+  // {
+  //   fprintf(stderr, "Port not found, argument must be the port number\n");
+  //   exit(EXIT_FAILURE);
+  // }
   printf("Use \"kill -s SIGUSR1 %d\" for stop the server\n", getpid());
   setup(); //crea le liste linkate, crea le mutex, crea le conditions e crea l'ambiente per i log
   pthread_t tid; //thread id del consumatore
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  run_producers(atoi(argv[1])); //continua l'esecuzione come produttore
+  run_producers(atoi("6000")); //continua l'esecuzione come produttore
 }
 
 
@@ -217,19 +217,21 @@ void* handle_client(void* client_inf){
    char name[BUFFER_NAME_SIZE + 1];//buffer di memorizzazione del nome utente (viene estratto qui)
    memset(name, 0, BUFFER_NAME_SIZE + 1); //inizializzato a 0 il buffer
 
-   char buffer[BUFFER_SIZE_MESSAGE];//buffer di memorizzazione dell'intero messaggio del client
+   char buffer[BUFFER_SIZE_MESSAGE + 1];//buffer di memorizzazione dell'intero messaggio del client
 
    while(1)
    {
-     memset(buffer, 0, BUFFER_SIZE_MESSAGE);//ogni iterazione viene resettato il buffer del mesasggio
+     memset(buffer, 0, BUFFER_SIZE_MESSAGE + 1);//ogni iterazione viene resettato il buffer del mesasggio
      byte_read = read(client_fd ,buffer, BUFFER_SIZE_MESSAGE); //rimane in ascolto sul client per messaggi
-     if (byte_read <= 0) break; //user disconnected or other error occurred, sot safe cont
+     if(byte_read <= 0) break; //user disconnected or other error occurred, sot safe cont
 
      if(get_name == 0)
      {
        get_username(buffer, name); //estrae lo username
-       //printf("%s\n", name);
-       if(check_username_already_taken(name)) //if username is taken
+       printf("preso username ! %s\n", name);
+       int f = check_username_already_taken(name);
+       printf("username taken? %i\n", f);
+       if(f) //if username is taken
        {
          handle_client_name_taken(client_fd); //si occupa di informare il client che il nome utente è già stato preso e chiude la connessione
          flag = 1; //serve per informare che bisogna o non bisogna fare determinate azioni successivamente
@@ -238,42 +240,54 @@ void* handle_client(void* client_inf){
        {
          username_node = new_node(name); //crea un nodo con all'interno il nome dello username
 
+         printf("%s\n","appendo un nodo con il nome dello username" );
          pthread_mutex_lock(&usernames.mutex); //entro in una zona critica, bisogna evitare che la lista cambi durante l'iterazione
          append_node(&usernames, username_node); //appendo il nodo nella lista
          pthread_mutex_unlock(&usernames.mutex);//esco dalla zona critica
 
-         node_client_fd = append_node_client_fd(&client_fd); //appendo il nodo dei client_fd alla lista, vedere funzione ->
+         printf("%s\n","appendo un nodo con il client fd" );
+         node_client_fd = append_node_client_fd(&client_info_->cli_fd); //appendo il nodo dei client_fd alla lista, vedere funzione ->
          //local_log = new_linkedlist(NULL);
        }
        if(flag) break; //if il nome è già stato preso allora esci dal while che ormai la connessione è chiusa
        get_name++; //incrementa l'intero per inidcare che il nome dello user è già stato estratto e di non tornare qui
      }
-
-     append_string_message_to_send(buffer, byte_read, client_fd, addr);/* se non ci sono stati problemi allora si può informare tutti gli altri client della presenza del nuovo
+     printf("appendo il nodo del messaggio\n");
+     append_string_message_to_send(buffer, byte_read + 1, client_fd, addr);/* se non ci sono stati problemi allora si può informare tutti gli altri client della presenza del nuovo
      arrivato appendendo il messaggio di Hello alla coda dei messaggi da inviare*/
    }
 
    if(flag == 0) //se il flag è == 0 allora la connsessione del client non è stata rifiutata per il nome è si può proseguire con la rimozione delle strutture dati generate
    {
+     printf("%s\n", "chiudo la connessione");
      close(client_fd); //chiude la connessione
+     printf("%s\n", "mando arrivederci");
      send_goodbye(buffer, name, addr); //appende un messaggio di arrivederci tra i messaggi da mandare
+     printf("%s\n", "rimuovo il nodo dalla lista");
      remove_node_client_fd(node_client_fd); //rimuove il client_fd dalla lista
+     printf("%s\n", "rimuovo il nodo dello username");
      remove_node_username(username_node); //rimuovi il nodo dello username dalla lista per liberare il nome per un altro utente
    }
 
-
+   printf("%s\n", "libero lo spazio cli_addr");
    free(client_info_->cli_addr); //libera dall'heap il client address
+   printf("%s\n", "libero lo spazio client_inf");
    free(client_inf); //libera dall'heap la struttura client_info
+   printf("\n");
    return NULL;
  }
 
 //---------------------------COMUNICATION BETWEN PRODUCERS-CONSUMER-------------------
 void append_string_message_to_send(char*string, int len, int client_fd, char* addr){
   pthread_mutex_lock(&message_to_send_struct.message_to_send->mutex);//entro nella sessione critica, nessuno deve poter toccare i messaggi
-  char* buffer= (char*)calloc(len, sizeof(char)); //allocate in heap the message (so is not lost at the end of function)
+  char* buffer = (char*)calloc(len, sizeof(char)); //allocate in heap the message (so is not lost at the end of function)
+  printf("%s\n", "copio nell'heap il messaggio dello user");
   buffer = strncpy(buffer, string, len);//copio il messaggio, che si trova nello stack, nell'heap
 
+  printf("Creo una struttura sender msg");
+  fflush(stdout);
   sender_msg* msg = new_sender_msg(buffer, client_fd, addr);//creo una struct sender_msg, che contiene il buffer del mesaggio nell'heap, il client_fd e l'indirizzo del mittente
+  printf("%s\n", "inserisco la struttura in un nodo");
   struct node* node = new_node((void*)msg);//new message node
   if(message_to_send_struct.message_to_send->lenght) //has next; alias-> there are other messages in queue to be sent; controlla se ci sono messaggi in coda
   {
@@ -367,16 +381,22 @@ Parse username from hello message
    non se ne trovano 2 uguali oppure non ci sono altre stringhe da confrontare.
    a quel punto ritorna 1 se lo username è già stato preso, altrimenti 0
    */
+   printf("itero sugli usernames per confrontare i nomi\n");
+   pthread_mutex_lock(&usernames.mutex);
+
    struct node* actual_node = usernames.first;
    while(actual_node)
      if(strcmp(name, (char*)actual_node->value) == 0)
       return 1;
      else actual_node = actual_node->next;//prossimo elemento su cui iterare, null se ci si trova alla fine
+
+   pthread_mutex_unlock(&usernames.mutex);
    return 0;
  }
 
  void handle_client_name_taken(int client_fd){
    static char name_taken[] = "Name already taken\n";
+   printf("%s\n","avviso il client del nome preso" );
    write(client_fd, name_taken, strlen(name_taken));//manda un messaggio al client per informarlo che il nome utente scelto è già stato preso
    close(client_fd);//chiude la connessione con il client
  }
@@ -441,8 +461,9 @@ void* run_consumer(void* null) {
     while(message_to_send_struct.message_to_send->first)//itero sulla linkedlist: while has next, ed è certo avere almeno 1 elemento
     {
       pthread_mutex_lock(&client_fd_linkedlist.mutex); //prende la lock sulla linkedlist dei client_fd per evitare che un client si aggiunga o rimuova durante l'inoltro dei messaggi
-
+      printf("Prendo il nodo del primo messaggio\n");
       struct node* actual_client_fd_node = client_fd_linkedlist.first; //prendo il puntatore al primo nodo del client_fd
+      printf("estraggo il sender\n");
       sender_msg* sender = (sender_msg*)message_to_send_struct.message_to_send->first->value; //estrare il primo struct sender_msg che si trova nel nodo della linkedlist dei messaggi da mandare
 
       while(actual_client_fd_node)//itero sui client_fd
@@ -451,18 +472,25 @@ void* run_consumer(void* null) {
         user che si connette prendendo l'fd appena liberato, in quel caso se non si facesse check_peer il messaggio non verrebbe inoltrato a questo user perché condivide l'fd del sender, allora guardando
         l'indirizzo associato all'fd si può capire se è lo stesso user che ha mandato il messaggio oppure uno user diverso con lo stesso fd;
         check_peer viene eseguito solo e solo se il l'fd del sender è == all'fd del nodo nella lista all'i-esima iterazione*/
+        printf("Writing %s ", sender->message);
         if(*(int*)actual_client_fd_node->value != sender->sockfd || check_peer(sender->sockfd, sender->addr) != 0)
+          {
+            printf("on %i\n",  *(int*)actual_client_fd_node->value);
             write(*(int*)actual_client_fd_node->value, sender->message, BUFFER_SIZE_MESSAGE); //si possono ignorare eventuali errori perché dei client se ne occupa il producer (dell'interrompere la connessione)
+          }
         actual_client_fd_node = actual_client_fd_node->next;//si aggiorna il nodo successivo
       }//fine iterazione sui client_fd
       store_message_to_send(sender->message, sender->addr, fd); //scrive su disco il messaggio mandato dal client; fd è il file descriptor del file global_log.txt precedentemente aperto
 
       pthread_mutex_unlock(&client_fd_linkedlist.mutex);//usciamo dalla sessione critica sbloccando il client_fd_linkedlist per permettere ai produccer di rimuovere o aggiungere client_fd
+      printf("libero lo spazio del sender\n");
       free(sender->addr); //libera l'address copiato nell'heap
       free(sender->message); //libera la stringa messaggio che si trovava nell'heap per essere condivisa
       free(sender);
+      printf("rimuovo il primo elemento dai messaggi\n");
       remove_first_from_linked_list(message_to_send_struct.message_to_send); /*rimuove il ndoo dall'inizio della lista linkata (con complessità Theta(1)), liberando lo spazio nell'heap
                                                                               per evitare altrimenti un inevitabile saturamento*/
+      printf("rimosso l'elemento\n");
     }
     pthread_mutex_unlock(&message_to_send_struct.message_to_send->mutex); /*rimossi tutti i messaggi dalla linkedlist message_to_send_struct.message_to_send: hasnext == false, si può
                                                                             restituire la linkedlist ai producers che potranno appendere e segnalare altri messaggi*/
@@ -486,6 +514,6 @@ void store_message_to_send(char* msg, char* cli_address, int fd){
 int check_peer(int client_fd, char* addr_sender){
   struct sockaddr_in addr;
   socklen_t addr_size = sizeof(struct sockaddr_in);
-  getpeername(client_fd, (struct sockaddr *)&addr, &addr_size);//uso questa funzione per prendere l'ip dal fd
-  return strcmp(inet_ntoa(addr.sin_addr), addr_sender); //compare ip del fd con l'ip del sender
+  int success = getpeername(client_fd, (struct sockaddr *)&addr, &addr_size);//uso questa funzione per prendere l'ip dal fd
+  return success == 0 && strcmp(inet_ntoa(addr.sin_addr), addr_sender) != 0; //compare ip del fd con l'ip del sender
 }
