@@ -1,0 +1,49 @@
+segnalato l'arrivo del messaggio al consumatore
+fatto
+appendo il nodo del messaggio
+copio nell'heap il messaggio dello user
+fatto
+Creo una struttura sender msg
+fatto
+inserisco la struttura in un nodo
+fatto
+	signal ricevuta
+Prendo il nodo del primo messaggio
+estraggo il sender
+fatto
+Writing 2021-6-4 20:10:22
+Has left the chatroom-->m:
+  on 4
+Writing 2021-6-4 20:10:22
+Has left the chatroom-->m:
+  on 7
+fatto
+salvo il messaggio nel global log
+fatto
+libero lo spazio del sender-> address
+fatto
+libero lo spazio del messaggio
+libero il sender
+fatto
+rimuovo il primo elemento dai messaggi
+rimosso l'elemento
+	tolgo il lock sui message to send
+fatto
+	prendo il lock sui messaggi da mandare
+	mi metto in attesa della signal
+segnalato l'arrivo del messaggio al consumatore
+fatto
+chiudo la connessione
+mando arrivederci
+rimuovo il nodo dalla lista
+rimuovo il nodo dello username
+libero lo spazio cli_addr
+libero lo spazio client_inf
+fatto
+Resource temporarily unavailable
+Error: signal 11:
+./server(+0x2dd6)[0x562437fb3dd6]
+/lib/x86_64-linux-gnu/libc.so.6(+0x41040)[0x7efd78c24040]
+/lib/x86_64-linux-gnu/libc.so.6(+0x978ce)[0x7efd78c7a8ce]
+/lib/x86_64-linux-gnu/libpthread.so.0(+0x9476)[0x7efd78dd8476]
+/lib/x86_64-linux-gnu/libc.so.6(clone+0x43)[0x7efd78cfad53]
