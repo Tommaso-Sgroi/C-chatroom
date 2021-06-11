@@ -9,6 +9,7 @@
 #include "client_/time/timestamp.c"
 #include "client_/struct/client_struct.h"
 #include "client_/client_utility.h"
+#include "headers/client.h"
 
 void error(const char *msg, int sockfd, int local_log_fd)
 {
@@ -20,6 +21,85 @@ void error(const char *msg, int sockfd, int local_log_fd)
 
 char null_string[] = " ";
 char quit[] = "__quit__\n";
+
+static char welcome[] = "\n\
+██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗    ██╗███╗   ██╗████████╗ ██████╗     \n\
+██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝    ██║████╗  ██║╚══██╔══╝██╔═══██╗    \n\
+██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗      ██║██╔██╗ ██║   ██║   ██║   ██║    \n\
+██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝      ██║██║╚██╗██║   ██║   ██║   ██║    \n\
+╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗    ██║██║ ╚████║   ██║   ╚██████╔╝    \n\
+ ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝    ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝     \n\
+                                                                                                     \n\
+████████╗██╗  ██╗███████╗                                                                            \n\
+╚══██╔══╝██║  ██║██╔════╝                                                                            \n\
+   ██║   ███████║█████╗                                                                              \n\
+   ██║   ██╔══██║██╔══╝                                                                              \n\
+   ██║   ██║  ██║███████╗                                                                            \n\
+   ╚═╝   ╚═╝  ╚═╝╚══════╝                                                                            \n\
+                                                                                                     \n\
+ ██████╗        ██╗  ██╗ █████╗ ████████╗██████╗  ██████╗  ██████╗ ███╗   ███╗                       \n\
+██╔════╝        ██║  ██║██╔══██╗╚══██╔══╝██╔══██╗██╔═══██╗██╔═══██╗████╗ ████║                       \n\
+██║             ███████║███████║   ██║   ██████╔╝██║   ██║██║   ██║██╔████╔██║                       \n\
+██║             ██╔══██║██╔══██║   ██║   ██╔══██╗██║   ██║██║   ██║██║╚██╔╝██║                       \n\
+╚██████╗███████╗██║  ██║██║  ██║   ██║   ██║  ██║╚██████╔╝╚██████╔╝██║ ╚═╝ ██║                       \n\
+ ╚═════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝     ╚═╝\n";
+
+/*
+---------------MAIN-------------------------------------
+*/
+int main(int argc, char *argv[]){
+    if(argc > 2)
+    {
+      fprintf(stderr, "Too many arguments, argument must be the port number\n");
+      exit(EXIT_FAILURE);
+    }
+    else if(argc < 2)
+    {
+      fprintf(stderr, "Port not found, argument must be the port number\n");
+      exit(EXIT_FAILURE);
+    }
+
+    setup_log();
+
+    int sockfd, portno;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+    pthread_t tid;
+
+    char name[BUFFER_NAME_SIZE+2]; //bisogna fare scanf con ":\n"
+    ask_name(name);
+    puts(welcome);
+
+    portno = atoi(argv[1]);
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
+        error("ERROR opening socket", -1, -1);
+    server = gethostbyname(/*argv[1]*/"localhost");
+    if (server == NULL) {
+        fprintf(stderr,"ERROR, no such host\n");
+        exit(0);
+    }
+    memset((char *) &serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(portno);
+
+    if(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
+        error("ERROR connecting", sockfd, -1);
+    printf("%s\n", "connection extablished");
+
+    fflush(stdout);
+    fflush(stdin);
+
+    if(pthread_create(&tid, NULL, &send_message, (void*)new_user_info(sockfd, name/*, "0"*/))!=0)
+        perror("Error while making thread");
+    listen_message(&sockfd);
+    close(sockfd);
+    exit(0);
+    return 0;
+}
+
 
 void quit_chat(int sockfd, int fd_local_log, char* name){
   static char has_left[] = "Has left the chatroom-->";
@@ -35,7 +115,7 @@ void quit_chat(int sockfd, int fd_local_log, char* name){
   strncat(buffer, has_left, strlen(has_left));
   strncat(buffer, name, BUFFER_NAME_SIZE);
   strncat(buffer, null_string, strlen(null_string));
-
+ 
   int bye_write = write(sockfd, buffer, strlen(buffer));
   if (bye_write < 0)
        error("ERROR writing to socket", sockfd, fd_local_log);
@@ -76,7 +156,7 @@ void send_hello(int sockfd, char* name, int fd){
   char time [BUFFER_DATE_SIZE];
   char new_name[strlen(has_joined) + BUFFER_NAME_SIZE];
 
-  memset(buff_out, 0, BUFFER_NAME_SIZE + BUFFER_DATE_SIZE + strlen(has_joined));
+  memset(buff_out, 0, BUFFER_NAME_SIZE + BUFFER_DATE_SIZE + strlen(has_joined)); 
   memset(time, 0, BUFFER_DATE_SIZE);
   memset(new_name, 0, strlen(has_joined) + BUFFER_NAME_SIZE);
 
@@ -104,7 +184,7 @@ int send_name(char* name, int sockfd){
 
 void* send_message(void* usr_info){
   struct user_info* usr = (struct user_info*)usr_info;
-  int fd_local_log = open("logs/local_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0666);
+  int fd_local_log = open("logs/local_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0660);
 
   int sockfd = usr->fd;
   char* name = usr->name;
@@ -150,56 +230,4 @@ void* send_message(void* usr_info){
 
 
 
-/*
----------------MAIN-------------------------------------
-*/
-int main(int argc, char *argv[]){
-    if(argc > 2)
-    {
-      fprintf(stderr, "Too many arguments, argument must be the port number\n");
-      exit(EXIT_FAILURE);
-    }
-    else if(argc < 2)
-    {
-      fprintf(stderr, "Port not found, argument must be the port number\n");
-      exit(EXIT_FAILURE);
-    }
 
-    setup_log();
-
-    int sockfd, portno;
-    struct sockaddr_in serv_addr;
-    struct hostent *server;
-    pthread_t tid;
-
-    char name[BUFFER_NAME_SIZE+2]; //bisogna fare scanf con ":\n"
-    ask_name(name);
-    portno = atoi("6000");
-
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)
-        error("ERROR opening socket", -1, -1);
-    server = gethostbyname(/*argv[1]*/"localhost");
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-    memset((char *) &serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(portno);
-
-    if(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
-        error("ERROR connecting", sockfd, -1);
-    printf("%s\n", "connection extablished");
-
-    fflush(stdout);
-    fflush(stdin);
-
-    if(pthread_create(&tid, NULL, &send_message, (void*)new_user_info(sockfd, name/*, "0"*/))!=0)
-        perror("Error while making thread");
-    listen_message(&sockfd);
-    close(sockfd);
-    exit(0);
-    return 0;
-}

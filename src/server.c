@@ -16,24 +16,49 @@
 #include "server_/datastructure/sstructure.c"
 #include "headers/server.h"
 #define MAX_CLIENT_QUEUE_REQUEST 16 //coda di attesa delle richieste client
+//#define users_online_string "Users online--> "
 
-
-int global_log_fd;
+int global_log_fd, server_socket;
 arraylist clients_fd_list, clients_usernames;
 
 struct {
-    arraylist buffer_messages_list;
-    pthread_cond_t new_message;
+    arraylist buffer_messages_list; //buffer dei messaggi
+    pthread_cond_t new_message; //condition che segnala al consumatore l'arrivo di un messaggio
 }buffer_messages;
 
 
+void signal_handler(){
+  char good_bye[] = "Server closed!!\nGood bye ;)\n";
+  int good_bye_len = 30;
 
+  close(global_log_fd); //chiude il file descriptore del log globale
+  int sockfd;
+  for(unsigned long index = 0; index < clients_fd_list.used; index++) //itera sui client e gli manda un messaggio di arrivederci per poi chiudere la connessione
+  {
+    sockfd = (int)clients_fd_list.array[index]; //estrae il file descriptor
+    write(sockfd, good_bye, good_bye_len);
+    close(sockfd);
+  }
+  
+  close(server_socket); //chiude la connessione sul server
+  exit(EXIT_SUCCESS);
+}
+
+void exit_server(int exit_status){ //uscita di emergenza in seguito a un error
+  for(unsigned long index = 0; index < clients_fd_list.used; index++)
+    close((int)clients_fd_list.array[index]); //chiude tutti i client file descritor aperti sul server
+  
+  close(server_socket); //chiude gli altri file descriptor
+  close(global_log_fd);
+  
+  exit(exit_status); //esce con l'exit status passato in input
+}
 
 int main(int argc, char *argv[]) {
   if(argc > 2)
   {
     fprintf(stderr, "Too many arguments, argument must be the port number\n");
-    exit(EXIT_FAILURE);
+    exit_server(EXIT_FAILURE);
   }
   else if(argc < 2)
   {
@@ -50,18 +75,18 @@ int main(int argc, char *argv[]) {
   if(pthread_create(&tid, NULL, &run_consumer, NULL)!=0) //crea il thread consumatore
   {
     perror("Cannot create consumer thread");//se ci sono errori allora non bisogna continuare
-    exit(EXIT_FAILURE);
+    exit_server(EXIT_FAILURE);
   }
 
-  run_producers(atoi("6000")); //continua l'esecuzione come produttore
+  run_producers(atoi(argv[1])); //continua l'esecuzione come produttore
 }
 
 void setup(){
-    //setup_signal_handler();
-    setup_arraylist();
-    setup_mutex();
-    setup_cond();
-    setup_logs();
+    setup_signal_handler(); //setup sul signal handler
+    setup_arraylist(); //setup sugli arraylist
+    setup_mutex(); //setup sulle mutex
+    setup_cond(); //setup sulle conditions
+    setup_logs(); //crea l'ambiente per lo storing del global log
 }
 
 int setup_server(struct sockaddr_in* serv_addr, int port){
@@ -71,62 +96,61 @@ int setup_server(struct sockaddr_in* serv_addr, int port){
 }
 
 
-  void setup_cond() {
-    if (pthread_cond_init(&buffer_messages.new_message, NULL) != 0)//inizializza la condition di arrivo messaggio
-    {//se da errore non è sicuro continuare
-        perror("Error in pthread_cond_init()\n");
-        exit(EXIT_FAILURE);
+void setup_cond() {
+  if (pthread_cond_init(&buffer_messages.new_message, NULL) != 0)//inizializza la condition di arrivo messaggio
+  {//se da errore non è sicuro continuare
+      perror("Error in pthread_cond_init()\n");
+      exit_server(EXIT_FAILURE);
+  }
+}
+
+void setup_signal_handler(){
+  struct sigaction act;
+  sigset_t set; // insieme di segnali (simile all'insieme di fd della select...)
+
+  sigemptyset(&set);//insieme vuoto
+  sigaddset(&set, SIGUSR1); //inizializzo l'insieme
+
+  act.sa_flags = 0;
+  act.sa_mask = set; //crea la maschera dei segnali
+  act.sa_handler = &signal_handler; // puntatore alla funzione handler
+  sigaction(SIGUSR1, &act, NULL);
+
+  if(sigaction(SIGINT, &act, NULL) == -1) //aggiungo il signal handler
+  {//se errore non è sicuro prosegurie
+    perror("sigaction:");
+    exit_server(EXIT_FAILURE);
+  }
+}
+
+  void setup_mutex(){
+    if(pthread_mutex_init(&buffer_messages.buffer_messages_list.mutex, NULL) != 0 || pthread_mutex_init(&clients_fd_list.mutex, NULL) != 0) //inizializza le mutex per le liste linkate del client_fd e i messaggi da mandare
+    { //se uno dei 2 da errore allora non è sicuro avviare il server
+      fprintf(stderr, "Error in pthread_mutex_init()\n");
+      exit_server(EXIT_FAILURE);
     }
   }
-  // void setup_signal_handler(){
-  //   struct sigaction act;
-  //   sigset_t set; /* insieme di segnali (simile all'insieme di fd della select...) */
-  //
-  //   sigemptyset( &set ); /* set = {} */
-  //   sigaddset( &set, SIGUSR1 ); /* set = {SIGUSR1} */
-  //
-  //   act.sa_flags = 0; /* questo campo serve principalmente per chiarire alcuni usi di SIGCHLD,
-  //      ma c'e' anche SA_NODEFER, vedere il man  */
-  //   act.sa_mask = set; /* i segnali in set sono "masked": se arriveranno mentre l'handler e'
-  //       in esecuzione, verranno messi in attesa (nel qual caso, si sta gia'
-  //       gestendo un SIGUSR1...) */
-  //   act.sa_handler = &sighandler; /* puntatore alla funzione (di cui e' stato dato il prototipo
-  //         come prima istruzione del main) */
-  //   sigaction( SIGUSR1, &act, NULL );
-  //
-  //   if(sigaction(SIGINT, &act, NULL) == -1) //aggiungo il signal handler
-  //   {//se errore non è sicuro prosegurie
-  //     perror("sigaction:");
-  //     exit(EXIT_FAILURE);
-  //   }
-  // }
-    void setup_mutex(){
 
-        if(pthread_mutex_init(&buffer_messages.buffer_messages_list.mutex, NULL) != 0 || pthread_mutex_init(&clients_fd_list.mutex, NULL) != 0) //inizializza le mutex per le liste linkate del client_fd e i messaggi da mandare
-        { //se uno dei 2 da errore allora non è sicuro avviare il server
-          fprintf(stderr, "Error in pthread_mutex_init()\n");
-          exit(EXIT_FAILURE);
-        }
+  void setup_logs(){
+    DIR* dir = opendir("logs");/*fa un check per vedere se esiste la dir dei log provando ad aprirla*/
+    if(dir) closedir(dir); //se esiste allora chiudila perché non serve tenerla aperta
+    else if(ENOENT == errno)//altrimenti sc'è l'errore di apertura...
+    {
+      int r = mkdir("logs", 0770 ); //...crea la dir...
+      if(r < 0) perror("Cannot create /log dir");
     }
-
-    void setup_logs(){
-        DIR* dir = opendir("logs");/*fa un check per vedere se esiste la dir dei log provando ad aprirla*/
-        if(dir) closedir(dir); //se esiste allora chiudila perché non serve tenerla aperta
-        else if(ENOENT == errno)//altrimenti sc'è l'errore di apertura...
-        {
-            int r = mkdir("logs", 0775 ); //...crea la dir...
-            if(r < 0) perror("Cannot create /log dir");
-            r = chmod("logs", 0775 );//...reimposta i diritti
-            if(r < 0) perror("Cannot change permission /log dir");
-        }
-        else
-        {//altrimenti l'errore è dato da qualche altro motivo e non è sicuro andare avanti (si esce)
-        perror("Impossibile creare dir logs");
-        exit(1);
-        }
+    else
+    {//altrimenti l'errore è dato da qualche altro motivo e non è sicuro andare avanti (si esce)
+      perror("Impossibile creare dir logs");
+      exit_server(EXIT_FAILURE);
+    }
   }
 
 void setup_arraylist(){
+  /*
+  inizializza gli arraylist con una dimensione
+  specificata
+  */
     initArray(&clients_fd_list, 10);
     initArray(&clients_usernames, 10);
     initArray(&buffer_messages.buffer_messages_list, 16);
@@ -140,7 +164,7 @@ void setup_arraylist(){
 
 void* run_producers(int port){
    //declare variables
-   int sockfd, client_fd;
+   int client_fd;
    socklen_t clilen;
    struct sockaddr_in serv_addr, cli_addr;
    pthread_t tid;
@@ -148,39 +172,45 @@ void* run_producers(int port){
    memset((char *) &serv_addr, 0, sizeof(serv_addr)); //azzera server_addr
 
    //setup socket
-   sockfd = socket(AF_INET, SOCK_STREAM, 0); //crea il socket per il server: flusso bidirezionale, protocollo IPV4
-   if (sockfd < 0) {
+   server_socket = socket(AF_INET, SOCK_STREAM, 0); //crea il socket per il server: flusso bidirezionale, protocollo IPV4
+   if (server_socket < 0) {
      perror("ERROR opening socket");
-     exit(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
+     exit_server(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
    }
 
 
    setup_server(&serv_addr, port); //inizializza sockaddr_in del server
 
-   if(bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {//assegna l'indirizzo al socket
+   if(bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {//assegna l'indirizzo al socket
       perror("ERROR on binding");
-      exit(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
+      exit_server(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
     }
    //start socket connection
-   listen(sockfd, MAX_CLIENT_QUEUE_REQUEST); //rende il socket pronto a ricevere richieste da parte di client, con queue massima
+   if(listen(server_socket, MAX_CLIENT_QUEUE_REQUEST) < 0)//rende il socket pronto a ricevere richieste da parte di client, con queue massima
+   {
+     perror("Error during listening");
+     exit_server(EXIT_FAILURE);
+   }
+
+
    clilen = sizeof(cli_addr);
    while(1)
    {
-       client_fd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen); //accetta la connessione da un client
-       if (client_fd < 0)
-           perror("ERROR on accept");
-       else if(pthread_create(&tid, NULL, &handle_client, (void*)new_client_info(&cli_addr, client_fd))!=0) //crea un thread indipendete produttore, passando le informazioni sul client attraverso la struct client_info
-           perror("Error while making thread");
+      client_fd = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen); //accetta la connessione da un client
+      if (client_fd < 0) //errore
+          perror("ERROR on accept");
+      else if(pthread_create(&tid, NULL, &handle_client, (void*)new_client_info(&cli_addr, client_fd))!=0) //crea un thread indipendete produttore, passando le informazioni sul client attraverso la struct client_info
+          perror("Error while making thread");
+      memset(&cli_addr, 0, sizeof(struct sockaddr_in));//azzera il client address
    }
-   close(sockfd);
+   close(server_socket);
    return 0;
  }
 
 void* handle_client(void* client_inf){
-  //estrae il filedescriptor e l'indirizzo ip del client
-  client_info* client_info_ = (client_info*)client_inf;
-  int client_fd = client_info_->cli_fd;
-  char* addr = client_info_->cli_addr;
+  client_info* client_info_ = (client_info*)client_inf; //estrae il pointer della struttura dati passata in input
+  int client_fd = client_info_->cli_fd; //estrae il file descriptor
+  char* addr = client_info_->cli_addr; //estrare l'indirizzo del client
 
 
   /*
@@ -189,35 +219,42 @@ void* handle_client(void* client_inf){
   flag: intero che indica se il nome è già stato preso
   -
   */
-  int byte_read;
+  int byte_read; //byte letti dal client
   char name[BUFFER_NAME_SIZE];//buffer di memorizzazione del nome utente (viene estratto qui)
   memset(name, 0, BUFFER_NAME_SIZE); //inizializzato a 0 il buffer
 
-  byte_read = read(client_fd, name, BUFFER_NAME_SIZE);
-  if(byte_read <= 0 /*&& name already taken*/)
+  if(read(client_fd, name, BUFFER_NAME_SIZE) <= 0) //legge il nome dal client
+  {
+    close(client_fd);
+    free(client_inf);
+    return NULL;
+  }  
+
+  char message_buf[BUFFER_SIZE_MESSAGE]; //buffer del messaggio, contine il messaggio inviato dal client
+  
+  if(send_users_online(client_fd, message_buf)) //manda gli utenti online al client e la funzione ritorna 1 in caso di errore
   {
     close(client_fd);
     free(client_inf);
     return NULL;
   }
-  
-  append_client_fd(client_fd);
-  append_username((unsigned long) name);
 
-  char message_buf[BUFFER_SIZE_MESSAGE];
+  append_client_fd(client_fd); //appende il coda il client_fd
+  //append_username((unsigned long) name); //appende lo username
+
   while(1)
   {
-    memset(message_buf, 0, BUFFER_SIZE_MESSAGE);
-    byte_read = read(client_fd, message_buf, BUFFER_SIZE_MESSAGE);
-    if(byte_read <= 0) break;
+    memset(message_buf, 0, BUFFER_SIZE_MESSAGE);//azzera il messaggio
+    byte_read = read(client_fd, message_buf, BUFFER_SIZE_MESSAGE); //legge nel buffer il messaggio del client
+    if(byte_read <= 0) break; //se errore (il client si è disconnesso) esce dal ciclo
 
-    append_string_message_to_send(message_buf, byte_read, client_fd, addr);
+    append_string_message_to_send(message_buf, byte_read, client_fd, addr); //appende il messaggio al buffer del consumatore
   }
   
-  remove_client_fd(client_fd); 
-  remove_username((unsigned long) name);
-  close(client_fd);
-  free(client_inf);
+  remove_client_fd(client_fd); //rimuove il file descriptor dalla lista
+  //remove_username((unsigned long) name);
+  close(client_fd); //chiude il file descriptor
+  free(client_inf); //libera la struttura di client info
   return NULL;
  }
 
@@ -225,7 +262,7 @@ void* handle_client(void* client_inf){
 void append_string_message_to_send(char* message, int len, int client_fd, char* addr){
   pthread_mutex_lock(&buffer_messages.buffer_messages_list.mutex);//entro nella sessione critica, nessuno deve poter toccare i messaggi
 
-  sender_msg* sender = new_sender_msg(message, client_fd, len, addr);
+  sender_msg* sender = new_sender_msg(message, client_fd, len, addr); //crea un nuovo oggetto sender, serve per far estrarre al consumatore le info utili
 
   if(buffer_messages.buffer_messages_list.used > 0) //has next; alias-> there are other messages in queue to be sent; controlla se ci sono messaggi in coda
   {
@@ -308,6 +345,17 @@ void append_username(unsigned long username_addr){
   pthread_mutex_unlock(&clients_usernames.mutex);//si esce dalla sessione critica
 }
 
+int send_users_online(int client_fd, char* message_buf){
+  memset(message_buf, 0, BUFFER_MESSAGE); //resetta il message buffer
+  
+  pthread_mutex_lock(&clients_fd_list.mutex);
+  int success = snprintf(message_buf, BUFFER_SIZE_MESSAGE, "Users online--> %lu", clients_fd_list.used);/*riutilizza il buffer del messaggio per avvisare il client
+                                                                      del numero di utenti collegati*/
+  pthread_mutex_unlock(&clients_fd_list.mutex);
+
+  return success < 0 || write(client_fd, message_buf, strlen(message_buf)) <= 0; //scrive sul client e ritorna il successo o meno
+}
+
  //--------------------USER DISCONNECTED---------------------------------------
 
 //   void remove_node_username(struct node* username){
@@ -350,10 +398,10 @@ void remove_username(unsigned long username_addr){
  */
 
 void* run_consumer(void* null) {
-  global_log_fd = open("logs/global_log.txt", O_WRONLY | O_APPEND | O_CREAT, 0666); //apre il file di testo dove vengono inseriti i log globali in append mode
+  global_log_fd = open("logs/global_log.txt", O_WRONLY | O_APPEND | O_CREAT | O_SYNC, 0660); //apre il file di testo dove vengono inseriti i log globali in append mode
   if(global_log_fd < 0)
     perror("Error while opening global log: ");
-  while (1)
+  while(1)
   {
     pthread_mutex_lock(&buffer_messages.buffer_messages_list.mutex); //fa un lock sui messaggi da mandare per poi mettersi in ascolto sulla condition
     if(&buffer_messages.buffer_messages_list.used == 0)//se non sono stati appesi messaggi da quando è stata rilasciata la lock a quando è stata riacquisita allora aspetta

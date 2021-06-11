@@ -5,7 +5,5 @@
 
 int main(int argc, char const *argv[])
 {
-    int scoreCount, a;
-    for ( scoreCount; scanf("%d", &a) == 1; scoreCount++);
-    return 0;
+    mkdir("dir", 0550);
 }

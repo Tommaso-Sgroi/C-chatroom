@@ -60,10 +60,8 @@ void setup_log(){
   if(dir) closedir(dir);
   else if(ENOENT == errno)
   {
-      int r = mkdir("logs", 0775);
+      int r = mkdir("logs", 0770 ); //...crea la dir...
       if(r < 0) perror("Cannot create /log dir");
-      r = chmod("logs", 0775 );
-      if(r < 0) perror("Cannot change permission /log dir");
   }
   else
   {

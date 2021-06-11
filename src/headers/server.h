@@ -17,7 +17,7 @@ void* run_producers(int);
     void append_client_fd(int client_fd);
     void remove_client_fd(int client_fd);
     //void handle_client_accept(struct node*, char*, struct node*, int*, struct linkedlist*);
-
+    int send_users_online(int, char*);
 
     void append_string_message_to_send(char*, int, int, char*);
     //void append_string_local_log(struct linkedlist*, char*, int);
