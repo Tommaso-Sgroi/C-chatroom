@@ -36,8 +36,8 @@ void signal_handler(){
   for(unsigned long index = 0; index < clients_fd_list.used; index++) //itera sui client e gli manda un messaggio di arrivederci per poi chiudere la connessione
   {
     sockfd = (int)clients_fd_list.array[index]; //estrae il file descriptor
-    write(sockfd, good_bye, good_bye_len);
-    close(sockfd);
+    write(sockfd, good_bye, good_bye_len); //manda l'arrivederci al client
+    close(sockfd); //chiude la connessione
   }
   
   close(server_socket); //chiude la connessione sul server
@@ -49,7 +49,7 @@ void exit_server(int exit_status){ //uscita di emergenza in seguito a un error
     close((int)clients_fd_list.array[index]); //chiude tutti i client file descritor aperti sul server
   
   close(server_socket); //chiude gli altri file descriptor
-  close(global_log_fd);
+  close(global_log_fd); //chiude il global log fd
   
   exit(exit_status); //esce con l'exit status passato in input
 }
@@ -65,10 +65,8 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Port not found, argument must be the port number\n");
     exit(EXIT_FAILURE);
   }
-  //signal(SIGSEGV, handler);   // install our handler
 
-
-  printf("Use \"kill -s SIGUSR1 %d\" for stop the server\n", getpid());
+  printf("Use \"kill -s SIGUSR1 %d\" for stop the server\n", getpid()); //printd il pid con le istruzioni di interruzione del processo
   setup(); //crea le liste linkate, crea le mutex, crea le conditions e crea l'ambiente per i log
   pthread_t tid; //thread id del consumatore
 
@@ -220,16 +218,6 @@ void* handle_client(void* client_inf){
   -
   */
   int byte_read; //byte letti dal client
-  char name[BUFFER_NAME_SIZE];//buffer di memorizzazione del nome utente (viene estratto qui)
-  memset(name, 0, BUFFER_NAME_SIZE); //inizializzato a 0 il buffer
-
-  if(read(client_fd, name, BUFFER_NAME_SIZE) <= 0) //legge il nome dal client
-  {
-    close(client_fd);
-    free(client_inf);
-    return NULL;
-  }  
-
   char message_buf[BUFFER_SIZE_MESSAGE]; //buffer del messaggio, contine il messaggio inviato dal client
   
   if(send_users_online(client_fd, message_buf)) //manda gli utenti online al client e la funzione ritorna 1 in caso di errore
@@ -298,7 +286,7 @@ unsigned long check_youngest_msg(sender_msg* sender){
     }
     else if(sender_ts->year == other_ts->year && sender_ts->month < other_ts->month) //se il messaggio del sender è stato mandato un anno precedente e lo stesso anno a quello del più vecchio posizionati dietro di esso
     {
-      ++flag;
+      ++flag; 
       index = i;
     }
     else if(sender_ts->month == other_ts->month && sender_ts->day < other_ts->day)//se il messaggio del sender è stato mandato un giorno precedente e lo stesso mese a quello del più vecchio posizionati dietro di esso
@@ -376,18 +364,6 @@ void remove_username(unsigned long username_addr){
   pthread_mutex_unlock(&clients_usernames.mutex);//si esce dalla sessione critica
 }
 
- void send_goodbye(char* buffer, char* name, char* addr){
-//    memset(buffer, 0, BUFFER_SIZE_MESSAGE); //azzera il buffer
-//    time_t t = time(NULL); //prendi il tempo corrente
-//    struct tm tm = *localtime(&t); //estrai il tempo locale
-//    //inserisci nel buffer una stringa contnente timestamp + la stringa di avviso agli altri utenti che l'utente x ha lasciato la chatroom + nome utente
-//    snprintf(buffer, BUFFER_SIZE_MESSAGE, "%d-%d-%d %d:%d:%d\n%s%s\n ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,"HAS LEFT THE CHATROOM-->", name);
-//    printf("Messo nel buffer il messaggio di arrivederci\n");
-
-//    append_string_message_to_send(buffer, strlen(buffer), -1, addr);//appende la stringa nei messaggi da mandare con un fd non valido
-//    printf("appeso il messaggio\n");
-
- }
 
   /*
   -------------------------------------RUN CONSUMER-------------------------------------

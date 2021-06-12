@@ -1,77 +1,81 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/*struttura arraylist contiene un vettore di unsigned long che rappresentano il valore numerico della locazione in memoria dell'oggetto
+oppure di contenere un valore numerico positivo (come il client fd)*/
 typedef struct {
-  unsigned long *array;
-  size_t used;
-  size_t size;
-
-  pthread_mutex_t mutex;
+  unsigned long *array; //vettore di unsigned long
+  size_t used; //lunghezza usata
+  size_t size; //lunghezza dell'array totale
+ 
+  pthread_mutex_t mutex; //mutex per evitare che i thread accedano alla stessa struttura nello stesso momento
 } arraylist;
-
+/*Inizializza l'arraylist con la lunghezza dell'array inziale passata in input,
+la mutex non è inizializzata perché potrebbe non servire sempre, bisogna inizializzarla 
+solo di volontà propria*/
 void initArray(arraylist *a, size_t initialSize) {
-  a->array = calloc(initialSize, sizeof(unsigned long));
-  a->used = 0;
-  a->size = initialSize;
+  a->array = calloc(initialSize, sizeof(unsigned long)); //alloca il vettore
+  a->used = 0; //setta a 0 l'utilizzo della lista
+  a->size = initialSize; //inserisce il contatore all'inizial size della lista
 }
 
+/*inserisce elemento in coda alla lista*/
 void insertArray(arraylist *a, unsigned long element) {
-  // a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
-  // Therefore a->used can go up to a->size 
-  if(a->used == a->size) {
-    a->size *= 2;
-    a->array = realloc(a->array, a->size * sizeof(unsigned long));
+  if(a->used == a->size) { //se gli usati sono uguali agli utilizzati allora bisogna riallocare l'array
+    a->size *= 2; //la nuova size è uguale al doppio della vecchia
+    a->array = realloc(a->array, a->size * sizeof(unsigned long));//realloca l'array
   }
-  a->array[a->used++] = element;
+  a->array[a->used++] = element; //inserisce l'elemento all'untima posizione e la incrementa
 }
 
+/*inserisce l'elemento a una posizione specifica facendo swappare di una posizione in avanti gli altri elementi*/
 int insertAt(arraylist* a, unsigned long where, unsigned long element){
-  if(where < 0 || where >= a->used) return 0;
+  if(where < 0 || where >= a->used) return 0; //controlla se la posizione è valida
 
-  if(a->used == a->size) {
+  if(a->used == a->size) { //incrementa la size se è finita (vedere sopra)
     a->size *= 2;
     a->array = realloc(a->array, a->size * sizeof(unsigned long));
   }
   
   for(unsigned long i = a->used; i >= where && i > 0; i--)
-    a->array[i] = a->array[i-1];
+    a->array[i] = a->array[i-1]; //mette una posizione avanti tutti gli elementi che si trovano dopo where
   
-  a->array[where] = element;
-  a->used++;
+  a->array[where] = element; //mette alla posizione indicata l'elemento
+  a->used++; //incrementa gli usati
 
-  return 0;
+  return 1; //ritorna 1 su successo
 }
+
+/*libera l'array e reimposta le size*/
 void freeArray(arraylist *a) {
-  free(a->array);
-  a->array = NULL;
-  a->used = a->size = 0;
+  free(a->array); //libera il vettore
+  a->array = NULL; //nullifica il vecchio puntatore al vettore
+  a->used = a->size = 0; //setta a zero i vecchi contatori
 }
 
+/*libera e reinizializza l'arraylist a 10*/
 void trim_list(arraylist* a){
   freeArray(a);
   initArray(a, 10);
 }
 
-
+/*rimuove l'elemento dall'arraylist facendo retrocedere tutti gli altri elementi*/
 void removeElement(arraylist* a, unsigned long element){
-  short flag = 0;
-  for(size_t i = 0; i < a->used; i++){
+  short flag = 0; //flag di status per indicare se è stato rimosso l'elemento
+  for(size_t i = 0; i < a->used; i++){ //itera sull'array
     
     if(flag) 
-      a->array[i-1] = a->array[i]; 
+      a->array[i-1] = a->array[i]; //se è stato rimosso l'elemento allora metti il successivo alla posizione precedente
 
-    else if(element == a->array[i]){
-      a->array[i] = 0;
-      flag++;
+    else if(element == a->array[i]){ //altrimenti se l'elemento è == a quello nella posizione i dell'array allora esegui le azioni
+      a->array[i] = 0; //metti a zero l'elemento
+      flag++; // incrementa la flag di status per indicare che è avvenuto il cambiamento
     }
   }
-  if(flag)
+  if(flag) //se è stato rimosso allora
   {
-    a->array[a->used-1] = 0;
-    a->used--;
-
-    if(a->used == 0 && a->size > 10)
-      trim_list(a);
+    a->array[a->used-1] = 0; //metti a 0 l'ultimo elemento recentemente puntato
+    a->used--; //decrementa used
   }
 }
 
