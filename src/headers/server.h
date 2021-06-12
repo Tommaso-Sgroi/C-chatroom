@@ -10,7 +10,7 @@ void setup();
 
 
 
-void* run_producers(int);
+void* run_producers(int, char*);
   void* handle_client(void*);
     void append_client_fd(int client_fd);
     void remove_client_fd(int client_fd);

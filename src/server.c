@@ -55,12 +55,12 @@ void exit_server(int exit_status){ //uscita di emergenza in seguito a un error
 }
 
 int main(int argc, char *argv[]) {
-  if(argc > 2)
+  if(argc > 3)
   {
     fprintf(stderr, "Too many arguments, argument must be the port number\n");
     exit_server(EXIT_FAILURE);
   }
-  else if(argc < 2)
+  else if(argc < 3)
   {
     fprintf(stderr, "Port not found, argument must be the port number\n");
     exit(EXIT_FAILURE);
@@ -76,29 +76,29 @@ int main(int argc, char *argv[]) {
     exit_server(EXIT_FAILURE);
   }
 
-  run_producers(atoi(argv[1])); //continua l'esecuzione come produttore
+  run_producers(atoi(argv[2]), argv[1]); //continua l'esecuzione come produttore
 }
 
 void setup(){
-    setup_signal_handler(); //setup sul signal handler
-    setup_arraylist(); //setup sugli arraylist
-    setup_mutex(); //setup sulle mutex
-    setup_cond(); //setup sulle conditions
-    setup_logs(); //crea l'ambiente per lo storing del global log
+  setup_signal_handler(); //setup sul signal handler
+  setup_arraylist(); //setup sugli arraylist
+  setup_mutex(); //setup sulle mutex
+  setup_cond(); //setup sulle conditions
+  setup_logs(); //crea l'ambiente per lo storing del global log
 }
 
 int setup_server(struct sockaddr_in* serv_addr, int port){
-    serv_addr->sin_addr.s_addr = INADDR_ANY; //permette connessioni da tutti gli indirizzi
-    serv_addr->sin_port = htons(port); //imposta la porta
-    return 0;
+  serv_addr->sin_addr.s_addr = INADDR_ANY; //permette connessioni da tutti gli indirizzi
+  serv_addr->sin_port = htons(port); //imposta la porta
+  return 0;
 }
 
 
 void setup_cond() {
   if (pthread_cond_init(&buffer_messages.new_message, NULL) != 0)//inizializza la condition di arrivo messaggio
   {//se da errore non è sicuro continuare
-      perror("Error in pthread_cond_init()\n");
-      exit_server(EXIT_FAILURE);
+    perror("Error in pthread_cond_init()\n");
+    exit_server(EXIT_FAILURE);
   }
 }
 
@@ -121,37 +121,37 @@ void setup_signal_handler(){
   }
 }
 
-  void setup_mutex(){
-    if(pthread_mutex_init(&buffer_messages.buffer_messages_list.mutex, NULL) != 0 || pthread_mutex_init(&clients_fd_list.mutex, NULL) != 0) //inizializza le mutex per le liste linkate del client_fd e i messaggi da mandare
-    { //se uno dei 2 da errore allora non è sicuro avviare il server
-      fprintf(stderr, "Error in pthread_mutex_init()\n");
-      exit_server(EXIT_FAILURE);
-    }
+void setup_mutex(){
+  if(pthread_mutex_init(&buffer_messages.buffer_messages_list.mutex, NULL) != 0 || pthread_mutex_init(&clients_fd_list.mutex, NULL) != 0) //inizializza le mutex per le liste linkate del client_fd e i messaggi da mandare
+  { //se uno dei 2 da errore allora non è sicuro avviare il server
+    fprintf(stderr, "Error in pthread_mutex_init()\n");
+    exit_server(EXIT_FAILURE);
   }
+}
 
-  void setup_logs(){
-    DIR* dir = opendir("logs");/*fa un check per vedere se esiste la dir dei log provando ad aprirla*/
-    if(dir) closedir(dir); //se esiste allora chiudila perché non serve tenerla aperta
-    else if(ENOENT == errno)//altrimenti sc'è l'errore di apertura...
-    {
-      int r = mkdir("logs", 0770 ); //...crea la dir...
-      if(r < 0) perror("Cannot create /log dir");
-    }
-    else
-    {//altrimenti l'errore è dato da qualche altro motivo e non è sicuro andare avanti (si esce)
-      perror("Impossibile creare dir logs");
-      exit_server(EXIT_FAILURE);
-    }
+void setup_logs(){
+  DIR* dir = opendir("logs");/*fa un check per vedere se esiste la dir dei log provando ad aprirla*/
+  if(dir) closedir(dir); //se esiste allora chiudila perché non serve tenerla aperta
+  else if(ENOENT == errno)//altrimenti sc'è l'errore di apertura...
+  {
+    int r = mkdir("logs", 0770 ); //...crea la dir...
+    if(r < 0) perror("Cannot create /log dir");
   }
+  else
+  {//altrimenti l'errore è dato da qualche altro motivo e non è sicuro andare avanti (si esce)
+    perror("Impossibile creare dir logs");
+    exit_server(EXIT_FAILURE);
+  }
+}
 
 void setup_arraylist(){
   /*
   inizializza gli arraylist con una dimensione
   specificata
   */
-    initArray(&clients_fd_list, 10);
-    initArray(&clients_usernames, 10);
-    initArray(&buffer_messages.buffer_messages_list, 16);
+  initArray(&clients_fd_list, 10);
+  initArray(&clients_usernames, 10);
+  initArray(&buffer_messages.buffer_messages_list, 16);
 }
 
 
@@ -160,49 +160,53 @@ void setup_arraylist(){
 -----------------------------PRODUCERS---------------------------------------
 */
 
-void* run_producers(int port){
-   //declare variables
-   int client_fd;
-   socklen_t clilen;
-   struct sockaddr_in serv_addr, cli_addr;
-   pthread_t tid;
+void* run_producers(int port, char* serv_address){
+  //declare variables
+  int client_fd;
+  socklen_t clilen;
+  struct sockaddr_in serv_addr, cli_addr;
+  pthread_t tid;
 
-   memset((char *) &serv_addr, 0, sizeof(serv_addr)); //azzera server_addr
+  memset((char *) &serv_addr, 0, sizeof(serv_addr)); //azzera server_addr
 
-   //setup socket
-   server_socket = socket(AF_INET, SOCK_STREAM, 0); //crea il socket per il server: flusso bidirezionale, protocollo IPV4
-   if (server_socket < 0) {
-     perror("ERROR opening socket");
-     exit_server(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
-   }
+  //setup socket
+  server_socket = socket(AF_INET, SOCK_STREAM, 0); //crea il socket per il server: flusso bidirezionale, protocollo IPV4
+  if (server_socket < 0) {
+    perror("ERROR opening socket");
+    exit_server(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
+  }
+
+  if(inet_pton(AF_INET, serv_address, &(serv_addr.sin_addr)) != 1){
+    perror("ERROR hostname");
+    exit_server(EXIT_FAILURE);
+  }
+
+  setup_server(&serv_addr, port); //inizializza sockaddr_in del server
+
+  if(bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {//assegna l'indirizzo al socket
+    perror("ERROR on binding");
+    exit_server(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
+  }
+  //start socket connection
+  if(listen(server_socket, MAX_CLIENT_QUEUE_REQUEST) < 0)//rende il socket pronto a ricevere richieste da parte di client, con queue massima
+  {
+    perror("Error during listening");
+    exit_server(EXIT_FAILURE);
+  }
 
 
-   setup_server(&serv_addr, port); //inizializza sockaddr_in del server
-
-   if(bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {//assegna l'indirizzo al socket
-      perror("ERROR on binding");
-      exit_server(EXIT_FAILURE); //in caso di errore non è sicuro proseguire
-    }
-   //start socket connection
-   if(listen(server_socket, MAX_CLIENT_QUEUE_REQUEST) < 0)//rende il socket pronto a ricevere richieste da parte di client, con queue massima
-   {
-     perror("Error during listening");
-     exit_server(EXIT_FAILURE);
-   }
-
-
-   clilen = sizeof(cli_addr);
-   while(1)
-   {
-      client_fd = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen); //accetta la connessione da un client
-      if (client_fd < 0) //errore
-          perror("ERROR on accept");
-      else if(pthread_create(&tid, NULL, &handle_client, (void*)new_client_info(&cli_addr, client_fd))!=0) //crea un thread indipendete produttore, passando le informazioni sul client attraverso la struct client_info
-          perror("Error while making thread");
-      memset(&cli_addr, 0, sizeof(struct sockaddr_in));//azzera il client address
-   }
-   close(server_socket);
-   return 0;
+  clilen = sizeof(cli_addr);
+  while(1)
+  {
+    client_fd = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen); //accetta la connessione da un client
+    if (client_fd < 0) //errore
+      perror("ERROR on accept");
+    else if(pthread_create(&tid, NULL, &handle_client, (void*)new_client_info(&cli_addr, client_fd))!=0) //crea un thread indipendete produttore, passando le informazioni sul client attraverso la struct client_info
+      perror("Error while making thread");
+    memset(&cli_addr, 0, sizeof(struct sockaddr_in));//azzera il client address
+  }
+  close(server_socket);
+  return 0;
  }
 
 void* handle_client(void* client_inf){
@@ -228,7 +232,6 @@ void* handle_client(void* client_inf){
   }
 
   append_client_fd(client_fd); //appende il coda il client_fd
-  //append_username((unsigned long) name); //appende lo username
 
   while(1)
   {
@@ -240,7 +243,6 @@ void* handle_client(void* client_inf){
   }
   
   remove_client_fd(client_fd); //rimuove il file descriptor dalla lista
-  //remove_username((unsigned long) name);
   close(client_fd); //chiude il file descriptor
   free(client_inf); //libera la struttura di client info
   return NULL;
@@ -327,18 +329,12 @@ void append_client_fd(int client_fd){
   pthread_mutex_unlock(&clients_fd_list.mutex);//si esce dalla sessione critica
  }
 
-void append_username(unsigned long username_addr){
-  pthread_mutex_lock(&clients_usernames.mutex);//si entra nella sezione critica del client_fd, bisogna evitare che cambi qualcosa nel mentre
-  insertArray(&clients_usernames, username_addr); //appende il nodo in fondo alla lista
-  pthread_mutex_unlock(&clients_usernames.mutex);//si esce dalla sessione critica
-}
-
 int send_users_online(int client_fd, char* message_buf){
   memset(message_buf, 0, BUFFER_MESSAGE); //resetta il message buffer
   
   pthread_mutex_lock(&clients_fd_list.mutex);
   int success = snprintf(message_buf, BUFFER_SIZE_MESSAGE, "Users online--> %lu", clients_fd_list.used);/*riutilizza il buffer del messaggio per avvisare il client
-                                                                      del numero di utenti collegati*/
+    del numero di utenti collegati*/
   pthread_mutex_unlock(&clients_fd_list.mutex);
 
   return success < 0 || write(client_fd, message_buf, strlen(message_buf)) <= 0; //scrive sul client e ritorna il successo o meno
@@ -346,23 +342,11 @@ int send_users_online(int client_fd, char* message_buf){
 
  //--------------------USER DISCONNECTED---------------------------------------
 
-//   void remove_node_username(struct node* username){
-// //    pthread_mutex_lock(&usernames.mutex);
-// //    remove_node_from_linkedlist(username, &usernames); //rimuove lo username dalla lista degli usernamae
-// //    pthread_mutex_unlock(&usernames.mutex);
-//  }
-
  void remove_client_fd(int client_fd){
   pthread_mutex_lock(&clients_fd_list.mutex);//si entra nella sezione critica del client_fd, bisogna evitare che cambi qualcosa nel mentre
   removeElement(&clients_fd_list, client_fd); //appende il nodo in fondo alla lista
   pthread_mutex_unlock(&clients_fd_list.mutex);//si esce dalla sessione critica
  }
-
-void remove_username(unsigned long username_addr){
-  pthread_mutex_lock(&clients_usernames.mutex);//si entra nella sezione critica del client_fd, bisogna evitare che cambi qualcosa nel mentre
-  removeElement(&clients_usernames, username_addr); //appende il nodo in fondo alla lista
-  pthread_mutex_unlock(&clients_usernames.mutex);//si esce dalla sessione critica
-}
 
 
   /*
@@ -434,11 +418,3 @@ void store_message_to_send(char* msg, int byte_message, char* cli_address){
   if(byte_w < 0)
     perror("Error while writing logs: ");
 }
-
-
-// int check_peer(int client_fd, char* addr_sender){
-// //   struct sockaddr_in addr;
-// //   socklen_t addr_size = sizeof(struct sockaddr_in);
-// //   int success = getpeername(client_fd, (struct sockaddr *)&addr, &addr_size);//uso questa funzione per prendere l'ip dal fd
-// //   return success == 0 && strcmp(inet_ntoa(addr.sin_addr), addr_sender) != 0; //compare ip del fd con l'ip del sender
-// }
