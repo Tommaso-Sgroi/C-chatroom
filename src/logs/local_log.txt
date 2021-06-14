@@ -36,4 +36,30 @@ a:
 bfdbdbfdbdbd
 2021-6-12 18:51:9
 Has left the chatroom-->a:
- 
+ 2021-6-14 21:55:4
+JOINED-->Carlo 
+ 2021-6-14 21:55:16
+JOINED-->Carls 
+ 2021-6-14 21:55:18
+Carls:
+ciao
+2021-6-14 21:55:22
+Carls:
+come staii?
+2021-6-14 21:55:26
+Carlo:
+bene tu?
+2021-6-14 21:55:29
+Has left the chatroom-->Carlo:
+ 2021-6-14 21:55:36
+Has left the chatroom-->Carls:
+ 2021-6-14 22:12:6
+JOINED-->Ciao 
+ 2021-6-14 22:12:23
+JOINED-->Ciaone 
+ 2021-6-14 22:12:26
+Ciaone:
+ciao
+2021-6-14 22:12:32
+Ciao:
+porcodio siii

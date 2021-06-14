@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <pthread.h>
 #include <time.h> 
@@ -50,12 +51,12 @@ static char welcome[] = "\n\
 */
 int main(int argc, char *argv[]){
   //controlli sulla quantità degli argomenti passati
-  if(argc > 2)
+  if(argc > 3)
   {
     fprintf(stderr, "Too many arguments, argument must be the port number\n");
     exit(EXIT_FAILURE);
   }
-  else if(argc < 2)
+  else if(argc < 3)
   {
     fprintf(stderr, "Port not found, argument must be the port number\n");
     exit(EXIT_FAILURE);
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]){
 
   int sockfd, portno; //socket file descripto, porta
   struct sockaddr_in serv_addr; //indirizzo del server
-  struct hostent *server;
+  struct hostent server;
   pthread_t tid;
 
   char name[BUFFER_NAME_SIZE+2]; //bisogna fare scanf con ":\n"
@@ -73,17 +74,20 @@ int main(int argc, char *argv[]){
   
   puts(welcome); //stampa la ASCII ART
 
-  portno = atoi(argv[1]); //converte la stringa porta in numero
+  portno = atoi(argv[2]); //converte la stringa porta in numero
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0); //apre una socket
-  if (sockfd < 0)
+  if(sockfd < 0)
       error("ERROR opening socket", -1, -1);
   
-  server = gethostbyname(/*argv[1]*/"localhost"); //prende l'indirizzo dal nome
-  if (server == NULL) {
-      fprintf(stderr,"ERROR, no such host\n");
-      exit(0);
+  //server = gethostbyname(/*argv[1]*/"localhost"); //prende l'indirizzo dal nome
+  
+  if(inet_pton(AF_INET, argv[1], &server) != 1)
+  {
+    perror("ERROR hostname");
+    exit(EXIT_FAILURE);
   }
+  
   memset((char *) &serv_addr, 0, sizeof(serv_addr)); //inizializza ls struttura
 
   serv_addr.sin_family = AF_INET; //inserisce la famiglia
