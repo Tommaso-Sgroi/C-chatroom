@@ -1,65 +1,107 @@
-2021-6-12 18:50:47
-JOINED-->Abc 
- 2021-6-12 18:50:52
+2021-6-14 23:39:43
+JOINED-->ciao+ 
+ 2021-6-14 23:39:47
 JOINED-->a 
- 2021-6-12 18:50:55
-a:
+ 2021-6-14 23:39:52
+ciao+:
 ciao
-2021-6-12 18:50:59
+2021-6-14 23:42:22
 JOINED-->a 
- 2021-6-12 18:50:59
+ 2021-6-14 23:42:52
+JOINED-->a 
+ 2021-6-14 23:43:22
+JOINED-->a 
+ 2021-6-14 23:43:26
+JOINED-->a 
+ 2021-6-14 23:46:13
 a:
-aa
-2021-6-12 18:51:0
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2021-6-14 23:46:13
 a:
-a
-2021-6-12 18:51:0
-a:
-a
-2021-6-12 18:51:0
-a:
-a
-2021-6-12 18:51:0
-a:
-a
-2021-6-12 18:51:0
-a:
-a
-2021-6-12 18:51:0
-a:
-a
-2021-6-12 18:51:3
-Abc:
-cdsdgsb
-2021-6-12 18:51:5
-a:
-bfdbdbfdbdbd
-2021-6-12 18:51:9
-Has left the chatroom-->a:
- 2021-6-14 21:55:4
-JOINED-->Carlo 
- 2021-6-14 21:55:16
-JOINED-->Carls 
- 2021-6-14 21:55:18
-Carls:
+aaaaa
+2021-6-15 15:19:23
+JOINED-->a 
+ 2021-6-15 15:19:37
+JOINED-->ciao 
+ 2021-6-15 15:19:41
+ciao:
 ciao
-2021-6-14 21:55:22
-Carls:
-come staii?
-2021-6-14 21:55:26
-Carlo:
-bene tu?
-2021-6-14 21:55:29
-Has left the chatroom-->Carlo:
- 2021-6-14 21:55:36
-Has left the chatroom-->Carls:
- 2021-6-14 22:12:6
-JOINED-->Ciao 
- 2021-6-14 22:12:23
-JOINED-->Ciaone 
- 2021-6-14 22:12:26
-Ciaone:
+2021-6-15 15:19:45
+a:
 ciao
-2021-6-14 22:12:32
-Ciao:
-porcodio siii
+2021-6-15 15:19:52
+a:
+cidcdv
+2021-6-15 15:21:35
+JOINED-->a 
+ 2021-6-15 15:21:39
+JOINED-->b 
+ 2021-6-15 15:21:40
+b:
+ciao
+2021-6-15 15:34:46
+JOINED-->a 
+ 2021-6-15 15:34:50
+a:
+ciao
+2021-6-15 15:34:55
+JOINED-->ciao1 
+ 2021-6-15 15:34:57
+ciao1:
+ciao
+2021-6-15 15:35:1
+a:
+ciao a te
+2021-6-15 15:35:4
+ciao1:
+a te
+2021-6-15 15:35:10
+JOINED-->ciao2 
+ 2021-6-15 15:35:11
+ciao2:
+ciaooo
+2021-6-15 15:35:16
+ciao1:
+ciaooooooooo
+2021-6-15 15:35:19
+a:
+ciaoooooooooooooo
+2021-6-15 15:37:43
+JOINED-->a 
+ 2021-6-15 15:37:49
+JOINED-->ciao 
+ 2021-6-15 15:38:22
+JOINED-->a 
+ 2021-6-15 15:39:22
+JOINED-->a 
+ 2021-6-15 15:40:22
+JOINED-->a 
+ 2021-6-15 15:40:41
+JOINED-->a 
+ 2021-6-15 15:41:17
+JOINED-->a 
+ 2021-6-15 15:45:28
+JOINED-->a 
+ 2021-6-15 15:46:21
+JOINED-->a 
+ 2021-6-15 15:47:45
+JOINED-->a 
+ 2021-6-15 15:47:58
+JOINED-->a 
+ 2021-6-15 15:48:1
+a:
+ciao
+2021-6-15 15:48:14
+a:
+ciao
+2021-6-15 15:48:15
+a:
+ciao
+2021-6-15 15:48:16
+a:
+ciao
+2021-6-15 15:48:17
+a:
+ciao
+2021-6-15 15:48:45
+a:
+aaaa

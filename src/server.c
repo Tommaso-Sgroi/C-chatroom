@@ -19,7 +19,7 @@
 //#define users_online_string "Users online--> "
 
 int global_log_fd, server_socket;
-arraylist clients_fd_list, clients_usernames;
+arraylist clients_fd_list;
 
 struct {
     arraylist buffer_messages_list; //buffer dei messaggi
@@ -27,9 +27,9 @@ struct {
 }buffer_messages;
 
 
-void signal_handler(){
-  char good_bye[] = "Server closed!!\nGood bye ;)\n";
-  int good_bye_len = 30;
+void signal_handler(){ 
+  char good_bye[] = "Server closed!!\nGood bye ;)\n"; 
+  int good_bye_len = 30; 
 
   close(global_log_fd); //chiude il file descriptore del log globale
   int sockfd;
@@ -150,7 +150,6 @@ void setup_arraylist(){
   specificata
   */
   initArray(&clients_fd_list, 10);
-  initArray(&clients_usernames, 10);
   initArray(&buffer_messages.buffer_messages_list, 16);
 }
 
@@ -350,7 +349,7 @@ int send_users_online(int client_fd, char* message_buf){
 
 
   /*
-  -------------------------------------RUN CONSUMER-------------------------------------
+  -------------------------------------RUN-------------------------------------
   Il consumatore si occupa di prendere i messaggi appesi alla struct message_to_send
   e mandarli a tutti i client connessi. prende e rimuove sempre il primo messaggio della
   lista(il più vecchio), poi libera l'heap dalle strutture allocate e dai mesasggi e
@@ -364,8 +363,11 @@ void* run_consumer(void* null) {
   while(1)
   {
     pthread_mutex_lock(&buffer_messages.buffer_messages_list.mutex); //fa un lock sui messaggi da mandare per poi mettersi in ascolto sulla condition
-    if(&buffer_messages.buffer_messages_list.used == 0)//se non sono stati appesi messaggi da quando è stata rilasciata la lock a quando è stata riacquisita allora aspetta
+    if(buffer_messages.buffer_messages_list.used == 0)//se non sono stati appesi messaggi da quando è stata rilasciata la lock a quando è stata riacquisita allora aspetta
+    {
+      printf("Waiting\n");
       pthread_cond_wait(&buffer_messages.new_message, &buffer_messages.buffer_messages_list.mutex);//rilascia il lock e si mette in asclto
+    }
     /*
     i comandi commentati qui sotto sono serviti a testare l'ordinamento dei messaggi secondo timestamp quando arrivano
     nella stessa finestra temporale
@@ -374,31 +376,31 @@ void* run_consumer(void* null) {
     // sleep(5);                                                   //ritardatari di arrivare e mettersi prima o dopo il messaggio arrivato a seconda del timestamp
     // pthread_mutex_lock(&buffer_messages.buffer_messages_list.mutex);//riprende il controllo della lock per escludere i produttori ad inserire messaggi
     arraylist* messages = &buffer_messages.buffer_messages_list;
-    for(unsigned long i = 0; i < buffer_messages.buffer_messages_list.used; i++)
+    for(unsigned long i = 0; i < buffer_messages.buffer_messages_list.used; i++) //per ogni messaggio nel buffer
     { 
-      pthread_mutex_lock(&clients_fd_list.mutex);
+      pthread_mutex_lock(&clients_fd_list.mutex); //metti la lock sui client fd
       //prendo il primo messaggio
-      sender_msg* msg = (sender_msg*) messages->array[i]; 
+      sender_msg* msg = (sender_msg*) messages->array[i]; //estrai la struttura del mittente
  
-      int client_fd = -1;
-      for(unsigned long n = 0; n < clients_fd_list.used; n++)
+      int client_fd = -1; //crea un file descriptor obsoleto che verrà rimpiazzato all'iterazione successiva
+      for(unsigned long n = 0; n < clients_fd_list.used; n++) //per ogni file descriptor
       {
-        client_fd = (int)clients_fd_list.array[n];
-        if(client_fd != msg->sockfd)
-          write(client_fd, msg->message, msg->massage_byte); //to improve!!
-
+        client_fd = (int)clients_fd_list.array[n]; //estrai il file descriptor
+        if(client_fd != msg->sockfd) //se il file descriptor non coincide con quello del sender allora non è stato lui a mandare il messaggio
+          write(client_fd, msg->message, msg->massage_byte); /*non c'è bisogno di controllare eventuali errori perché in caso sarà il thread
+          al produttore (client) a occuparsi di chiudere la connessione o gestire l'errore*/
       }
-      pthread_mutex_unlock(&clients_fd_list.mutex);
+      pthread_mutex_unlock(&clients_fd_list.mutex); //sblocca la lista del file descriptor
       store_message_to_send(msg->message, msg->massage_byte, msg->address); //scrive su disco il messaggio mandato dal client; fd è il file descriptor del file global_log.txt precedentemente aperto
     }
-    size_t i1 = buffer_messages.buffer_messages_list.used;
-    do
-    {
-      sender_msg* msg = (sender_msg*) messages->array[i1];
-      removeElement(&buffer_messages.buffer_messages_list, (unsigned long) msg);
-      free(msg);
-    } while (i1-- != 0);
     
+    do //bisogna fare pulizia del buffer, se si è arrivati qui vuol dire che almeno un messaggio è presente
+    {
+      sender_msg* msg = (sender_msg*) messages->array[messages->used -1]; //estrare la struttura sender_msg
+      removeElement(messages, (unsigned long) msg); //rimuove l'elemento che corrisponde alla locazione in memoria del messaggio
+      free(msg); //libera la struttura
+    } while(messages->used > 0);
+     
     pthread_mutex_unlock(&buffer_messages.buffer_messages_list.mutex); //fa un lock sui messaggi da mandare per poi mettersi in ascolto sulla condition
   }//si ritorna al while(1) per rimettersi in ascolto sulla condition
 

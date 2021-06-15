@@ -5,5 +5,6 @@
 
 int main(int argc, char const *argv[])
 {
-    mkdir("dir", 0550);
+    size_t i;
+    printf("%lu", i);
 }

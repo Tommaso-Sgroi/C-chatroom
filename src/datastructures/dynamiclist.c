@@ -74,6 +74,7 @@ void removeElement(arraylist* a, unsigned long element){
   }
   if(flag) //se è stato rimosso allora
   {
+    puts("Removed element");
     a->array[a->used-1] = 0; //metti a 0 l'ultimo elemento recentemente puntato
     a->used--; //decrementa used
   }

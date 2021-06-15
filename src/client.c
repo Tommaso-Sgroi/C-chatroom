@@ -3,17 +3,17 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netdb.h>
+#include <netdb.h> 
 #include <pthread.h>
 #include <time.h> 
-#include "datastructures/size.h"
+#include "datastructures/size.h" 
 #include "client_/time/timestamp.c"
 #include "client_/struct/client_struct.h"
 #include "client_/client_utility.h"
 #include "headers/client.h"
 
 /*chiude la connessione e il local log fd*/
-void error(const char *msg, int sockfd, int local_log_fd) 
+void error(const char *msg, int sockfd, int local_log_fd)  
 {
     close(sockfd);
     close(local_log_fd);
