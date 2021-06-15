@@ -255,7 +255,7 @@ void append_string_message_to_send(char* message, int len, int client_fd, char* 
 
   if(buffer_messages.buffer_messages_list.used > 0) //has next; alias-> there are other messages in queue to be sent; controlla se ci sono messaggi in coda
   {
-    unsigned long index = check_youngest_msg(sender);
+    unsigned long index = check_youngest_msg(sender); // ritorna l'indice dove inserire il messaggio + 1, quindi se == 0 allora non vi è stato trovato un messaggio più vecchio
     if(index == 0) //allora non è stato torvato un messaggio più giovane
       insertArray(&buffer_messages.buffer_messages_list, (unsigned long) sender); //appende in testa alla lista
     else
@@ -364,10 +364,7 @@ void* run_consumer(void* null) {
   {
     pthread_mutex_lock(&buffer_messages.buffer_messages_list.mutex); //fa un lock sui messaggi da mandare per poi mettersi in ascolto sulla condition
     if(buffer_messages.buffer_messages_list.used == 0)//se non sono stati appesi messaggi da quando è stata rilasciata la lock a quando è stata riacquisita allora aspetta
-    {
-      printf("Waiting\n");
       pthread_cond_wait(&buffer_messages.new_message, &buffer_messages.buffer_messages_list.mutex);//rilascia il lock e si mette in asclto
-    }
     /*
     i comandi commentati qui sotto sono serviti a testare l'ordinamento dei messaggi secondo timestamp quando arrivano
     nella stessa finestra temporale

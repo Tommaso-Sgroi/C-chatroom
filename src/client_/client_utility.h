@@ -10,8 +10,8 @@
 
 /*printa il carattere '>' e fa un flush dello stdout*/
 void print_n_flush(){
-  printf(">");
-  fflush(stdout);
+  printf(">"); //printa il segno di posizionamento
+  fflush(stdout); //e forza il flush dello stdout
 }
 
 /*toglie l'ultimo carattere '\n' dal messaggio*/
@@ -77,17 +77,12 @@ void setup_log(){
   else //l'errore è un altro ed esci perché non è sicuro procedere
   {
     perror("Impossibile creare dir logs");
-    _exit(1);
+    exit(1);
   }
 }
 
 /*prende il file descriptor del local log*/
 void store_local_log(int fd, char* message){
-  if(fd < 0)
-  {
-    perror("Error while opening local_log: ");
-    return;
-  }
   int bye_write = write(fd, message, strlen(message)); //scrive messaggio nel local log
   if (bye_write < 0)
        perror("ERROR writing in local_log");

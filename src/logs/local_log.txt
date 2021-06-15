@@ -1,107 +1,14 @@
-2021-6-14 23:39:43
-JOINED-->ciao+ 
- 2021-6-14 23:39:47
+2021-6-15 16:46:11
 JOINED-->a 
- 2021-6-14 23:39:52
-ciao+:
-ciao
-2021-6-14 23:42:22
-JOINED-->a 
- 2021-6-14 23:42:52
-JOINED-->a 
- 2021-6-14 23:43:22
-JOINED-->a 
- 2021-6-14 23:43:26
-JOINED-->a 
- 2021-6-14 23:46:13
-a:
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2021-6-14 23:46:13
-a:
-aaaaa
-2021-6-15 15:19:23
-JOINED-->a 
- 2021-6-15 15:19:37
-JOINED-->ciao 
- 2021-6-15 15:19:41
-ciao:
-ciao
-2021-6-15 15:19:45
+ 2021-6-15 16:46:20
 a:
 ciao
-2021-6-15 15:19:52
-a:
-cidcdv
-2021-6-15 15:21:35
-JOINED-->a 
- 2021-6-15 15:21:39
-JOINED-->b 
- 2021-6-15 15:21:40
-b:
-ciao
-2021-6-15 15:34:46
-JOINED-->a 
- 2021-6-15 15:34:50
+2021-6-15 16:46:21
 a:
 ciao
-2021-6-15 15:34:55
-JOINED-->ciao1 
- 2021-6-15 15:34:57
-ciao1:
-ciao
-2021-6-15 15:35:1
-a:
-ciao a te
-2021-6-15 15:35:4
-ciao1:
-a te
-2021-6-15 15:35:10
-JOINED-->ciao2 
- 2021-6-15 15:35:11
-ciao2:
-ciaooo
-2021-6-15 15:35:16
-ciao1:
-ciaooooooooo
-2021-6-15 15:35:19
-a:
-ciaoooooooooooooo
-2021-6-15 15:37:43
-JOINED-->a 
- 2021-6-15 15:37:49
-JOINED-->ciao 
- 2021-6-15 15:38:22
-JOINED-->a 
- 2021-6-15 15:39:22
-JOINED-->a 
- 2021-6-15 15:40:22
-JOINED-->a 
- 2021-6-15 15:40:41
-JOINED-->a 
- 2021-6-15 15:41:17
-JOINED-->a 
- 2021-6-15 15:45:28
-JOINED-->a 
- 2021-6-15 15:46:21
-JOINED-->a 
- 2021-6-15 15:47:45
-JOINED-->a 
- 2021-6-15 15:47:58
-JOINED-->a 
- 2021-6-15 15:48:1
+2021-6-15 16:46:22
 a:
 ciao
-2021-6-15 15:48:14
+2021-6-15 16:46:23
 a:
 ciao
-2021-6-15 15:48:15
-a:
-ciao
-2021-6-15 15:48:16
-a:
-ciao
-2021-6-15 15:48:17
-a:
-ciao
-2021-6-15 15:48:45
-a:
-aaaa
